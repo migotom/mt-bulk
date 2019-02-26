@@ -1,0 +1,37 @@
+workers = 4
+verify_check_sleep = 2000
+
+[db]
+driver = "postgres"
+params = "postgres://user:pass@host/db"
+id_server = 1
+
+    [db.queries]
+    get_devices =  "SELECT id, ip FROM devices WHERE id_server = $1"
+
+[certificates_store]
+directory = "certs/"
+openssl = "/usr/bin/openssl"
+
+[service]
+[service.ssh]
+port = "22"
+password = "secret"
+user = "admin"
+
+[service.mikrotik_api]
+port = "8729"
+password = "secret"
+user = "admin"
+
+# some example custom commands
+
+# commands to run with secure API
+[[custom-api.command]]
+body = "/interface/print"
+[[custom-api.command]]
+body = "/user/print"
+
+# commands to run with SSH
+[[custom-ssh.command]]
+body = "/user print"
