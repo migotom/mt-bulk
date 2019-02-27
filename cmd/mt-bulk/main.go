@@ -32,7 +32,7 @@ Options:
   --source-file=<file-in>  Load hosts from file <file-in>
 `
 
-const version = "0.1.0"
+const version = "1.0"
 
 func loadHosts(hostsLoaders *[]schema.HostsLoaderFunc, hosts *schema.Hosts) {
 	hosts.Reset()
