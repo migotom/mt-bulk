@@ -36,11 +36,11 @@ type CustomSequence struct {
 
 // Command specifies single command, expected (or not) comamnd's result and optional sleep time that should be performed after command execution.
 type Command struct {
-	Body         string
-	SkipExpected bool
-	Expect       string
-	MatchPrefix  string
-	Match        string
+	Body         string `toml:"body"`
+	SkipExpected bool   `toml:"skip_expected"`
+	Expect       string `toml:"expect"`
+	MatchPrefix  string `toml:"match_prefix"`
+	Match        string `toml:"match"`
 
 	Sleep  Duration
 	Result string

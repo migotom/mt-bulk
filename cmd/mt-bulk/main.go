@@ -14,10 +14,11 @@ import (
 var usage = `MT-bulk.
 
 Usage:
+  mt-bulk gen-certs [options]
+  mt-bulk init-secure-api [options] [<hosts>...]
+  mt-bulk change-password (--new=<newpass>) [options] [<hosts>...]  
   mt-bulk custom-api [--custom-args=<custom-args>] [options] [<hosts>...]  
   mt-bulk custom-ssh [--custom-args=<custom-args>] [options] [<hosts>...]  
-  mt-bulk init-secure-api [--gen-certs] [options] [<hosts>...]
-  mt-bulk change-password (--new=<newpass>) [options] [<hosts>...]  
   mt-bulk -h | --help
   mt-bulk --version
 
@@ -50,7 +51,7 @@ func main() {
 
 	hostsLoaders, _, err := configParser(arguments, &appConfig)
 	if err != nil {
-		log.Fatalf("[Fatal error] %s\n", err)
+		log.Fatalf("[Fatal error] Config parser %s\n", err)
 	}
 
 	var Hosts schema.Hosts
