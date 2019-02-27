@@ -18,6 +18,7 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 
 	appConfig.Service = make(map[string]schema.Service)
 
+	// config file
 	var apiConfigFile string
 	apiConfigFile, _ = arguments["-C"].(string)
 	if err := config.LoadConfigFile(appConfig, apiConfigFile); err != nil {
@@ -28,13 +29,21 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	appConfig.SkipSummary = arguments["--skip-summary"].(bool)
 	appConfig.IgnoreErrors = !arguments["--exit-on-error"].(bool)
 
+	// defaults
 	if appConfig.VerifySleep == 0 {
 		appConfig.VerifySleep = 2000
 	}
-
 	if appConfig.Workers == 0 {
 		appConfig.Workers = 4
 	}
+	if appConfig.Certs.Directory == "" {
+		appConfig.Certs.Directory = "certs/"
+	}
+	if appConfig.Certs.OpenSSL == "" {
+		appConfig.Certs.OpenSSL = "/usr/bin/openssl"
+	}
+
+	// parse args
 	if workers, ok := arguments["-w"].(string); ok {
 		if workers, err := strconv.ParseInt(workers, 10, 64); err == nil {
 			appConfig.Workers = int(workers)
@@ -45,18 +54,19 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 		return nil, nil, fmt.Errorf("Missing Certificates Store directory, %s", err)
 	}
 
-	if m, _ := arguments["init-secure-api"].(bool); m {
-		if gen, _ := arguments["--gen-certs"].(bool); gen {
-			if err := service.GenerateCA(appConfig); err != nil {
-				return nil, nil, err
-			}
-			if err := service.GenerateCerts(appConfig, "device"); err != nil {
-				return nil, nil, err
-			}
-			if err := service.GenerateCerts(appConfig, "client"); err != nil {
-				return nil, nil, err
-			}
+	if gen, _ := arguments["gen-certs"].(bool); gen {
+		if err := service.GenerateCA(appConfig); err != nil {
+			return nil, nil, err
 		}
+		if err := service.GenerateCerts(appConfig, "device"); err != nil {
+			return nil, nil, err
+		}
+		if err := service.GenerateCerts(appConfig, "client"); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if m, _ := arguments["init-secure-api"].(bool); m {
 		appConfig.ModeHandler = mode.InitSecureAPIHandler
 	}
 	if m, _ := arguments["change-password"].(bool); m {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/migotom/mt-bulk/internal/schema"
 	"github.com/migotom/mt-bulk/internal/service"
@@ -34,9 +35,9 @@ func InitSecureAPIHandler(config *schema.GeneralConfig, host schema.Host) error 
 			{Body: `/ip service set api-ssl certificate=none`},
 			{Body: `/certificate print detail`, MatchPrefix: "c", Match: `(?m)^\s+(\d+).*mtbulkdevice`},
 			{Body: `/certificate remove %{c1}`},
-			//{Body: `/certificate import file-name=mtbulkdevice.crt passphrase=""`, Expect: "certificates-imported: 1"},
-			//{Body: `/certificate import file-name=mtbulkdevice.key passphrase=""`, Expect: "private-keys-imported: 1", Sleep: schema.Duration{Duration: time.Duration(config.VerifySleep) * time.Millisecond}},
-			//{Body: `/ip service set api-ssl certificate=mtbulkdevice.crt`},
+			{Body: `/certificate import file-name=mtbulkdevice.crt passphrase=""`, Expect: "certificates-imported: 1"},
+			{Body: `/certificate import file-name=mtbulkdevice.key passphrase=""`, Expect: "private-keys-imported: 1", Sleep: schema.Duration{Duration: time.Duration(config.VerifySleep) * time.Millisecond}},
+			{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`},
 		}
 
 		// execute commands

@@ -16,12 +16,12 @@ openssl = "/usr/bin/openssl"
 [service]
 [service.ssh]
 port = "22"
-password = "secret"
+password = "new_secret,old_secret"
 user = "admin"
 
 [service.mikrotik_api]
 port = "8729"
-password = "secret"
+password = "new_secret,old_secret"
 user = "admin"
 
 # some example custom commands

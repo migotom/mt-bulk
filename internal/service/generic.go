@@ -32,7 +32,7 @@ func ExecuteCommands(d Service, commands []schema.Command) error {
 	dev := d.GetDevice()
 	for _, c := range commands {
 		for match, value := range dev.matches {
-			fmt.Printf("checking match: %s (replace with value %s)\n", match, value)
+			fmt.Printf("checking match:%s (replace with value %s)\n", match, value)
 			re := regexp.MustCompile(match)
 			c.Body = re.ReplaceAllString(c.Body, value)
 		}
@@ -60,7 +60,7 @@ func ExecuteCommands(d Service, commands []schema.Command) error {
 			if matches := re.FindStringSubmatch(c.Result); len(matches) > 1 {
 				for i := 1; i < len(matches); i++ {
 					dev.matches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i)] = matches[i]
-					fmt.Printf("found: key:%s, %v\n", fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i), matches[i])
+					fmt.Printf("found: key:%s value:%v\n", fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i), matches[i])
 				}
 			}
 		}
