@@ -17,10 +17,10 @@ Usage:
   mt-bulk --version
 
 Options:
-  -C <config-file>         Use configuration file, eg. certs locations, ports, commands sequences, custom commands, etc...
+  -C <config-file>         Use configuration file, e.g. certs locations, ports, commands sequences, custom commands, etc...
 
   -s                       Be quiet and don't print commands and commands results to standard output
-  -w <workers>             Number of paralell connections to run (default: 4)
+  -w <workers>             Number of parallel connections to run (default: 4)
 
   --skip-summary           Skip errors summary
   --exit-on-error          In case of any error stop executing commands
@@ -34,7 +34,7 @@ Options:
 ### Dependencies
 
 Application needs OpenSSL to generate device and host certificates (used by operation *gen-certs*).
-Reccomended version for Windows: https://slproweb.com/products/Win32OpenSSL.html
+Recommended version for Windows: https://slproweb.com/products/Win32OpenSSL.html
 
 ### Examples:
 
@@ -46,7 +46,7 @@ Create new certificates using OpenSSL binary pointed by mtbulk.cfg (section [cer
 ```
 mt-bulk init-secure-api -C mtbulk.cfg 192.168.1.2 192.168.1.3:222 192.168.1.4:6654
 ```
-Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (each device have running ssh on different port) with SSL API and certificates pointed by mtbulk.cfg (section [certificates_store]).
+Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (each device has running SSH on different port) with SSL API and certificates pointed by mtbulk.cfg (section [certificates_store]).
 
 ```
 mt-bulk change-password -w 16 -C mtbulk.cfg --new=supersecret --source-db
@@ -65,7 +65,7 @@ mt-bulk <operation-name> [additional parameters]
 
 MT-bulk while connecting to devices is using list of passwords provided in configuration file, sections: [service.ssh] and [service.mikrotik_api], passwords are comma separated.
 
-eg.
+e.g.
 ```
 [service]
 [service.ssh]
@@ -77,7 +77,7 @@ user = "admin"
 ### gen-certs
 
 Generate and store device and host certificates required to establish secure connection using Mikrotik API. As default certificates are stored in certs/ folder. 
-This operation may be proceed once, mt-bulk will use certificates from certs/ to handle connections with each device.
+This operation may be proceeded once, mt-bulk will use certificates from certs/ to handle connections with each device.
 
 ### init-secure-api
 
@@ -85,7 +85,7 @@ Initialize Mikrotik device to use secure API with mt-bulk. Operation uploads to 
 
 ### change-password
 
-Change passwor to given new one with option --new=< newpass >
+Change password to given new one with option --new=< newpass >
 
 ### custom-api and custom-ssh
 
