@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 )
 
-const configName = "config.toml"
-const configHome = ".mt-bulk.toml"
+const configName = "config.cfg"
+const configHome = ".mt-bulk.cfg"
 const appSupport = "/Library/Application Support/MT-bulk"
 
 func getConfigFileName() string {

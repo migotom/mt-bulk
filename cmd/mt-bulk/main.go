@@ -32,7 +32,7 @@ Options:
   --source-file=<file-in>  Load hosts from file <file-in>
 `
 
-const version = "1.0"
+const version = "1.1"
 
 func loadHosts(hostsLoaders *[]schema.HostsLoaderFunc, hosts *schema.Hosts) {
 	hosts.Reset()
@@ -56,7 +56,7 @@ func main() {
 
 	var Hosts schema.Hosts
 	loadHosts(&hostsLoaders, &Hosts)
-	if len(Hosts.Get()) == 0 {
+	if len(Hosts.Get()) == 0 && len(hostsLoaders) > 0 {
 		log.Fatalln("No hosts to process.")
 	}
 
