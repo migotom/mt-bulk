@@ -23,9 +23,9 @@ Usage:
   mt-bulk --version
 
 Options:
-  -C <config-file>         Use configuration file, eg. certs locations, ports, commands sequences, custom commands, etc...
+  -C <config-file>         Use configuration file, e.g. certs locations, ports, commands sequences, custom commands, etc...
   -s                       Be quiet and don't print commands and commands results to standard output
-  -w <workers>             Number of paralell connections to run (default: 4)
+  -w <workers>             Number of parallel connections to run (default: 4)
   --skip-summary           Skip errors summary
   --exit-on-error          In case of any error stop executing commands
   --source-db              Load hosts using database configured by -C <config-file>
