@@ -1,4 +1,4 @@
-// +build !windows,!darwin
+// +build !linux,!darwin
 
 package config
 
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-const configHome = ".mt-bulk.cfg"
+const configHome = "mt-bulk.cfg"
 const configSys = "config.cfg"
 
 const etc = "/etc/mt-bulk/"

@@ -26,7 +26,7 @@ func GenerateCA(config *schema.GeneralConfig) error {
 
 	cmd := exec.Command(config.Certs.OpenSSL, "req", "-nodes", "-new", "-x509", "-days", "3650", "-subj", "/C=US/ST=US/L=FakeTown/O=IT/CN=ca.cell-crm.com", "-keyout", key, "-out", ca)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("ssl req: %v, %v", err, out)
+		return fmt.Errorf("ssl req: %v, %v", err, string(out))
 	}
 
 	return nil

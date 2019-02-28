@@ -1,6 +1,6 @@
 # mt-bulk
 
-MT-bulk asynchronously and parallel sends using Mikrotik SSL API or SSH defined operations to list of devices provided by command line, loaded from file or database.
+MT-bulk asynchronously and parallel sends using Mikrotik SSL API or SSH defined commands to list of devices provided by command line, loaded from file or database.
 
 ## Options
 
@@ -30,6 +30,29 @@ Options:
 
   <hosts>...               List of space separated hosts in format IP[:PORT]
 ```
+
+### Dependencies
+
+Application needs OpenSSL to generate device and host certificates (used by operation *gen-certs*).
+Reccomended version for Windows: https://slproweb.com/products/Win32OpenSSL.html
+
+### Examples:
+
+```
+mt-bulk gen-certs -C mtbulk.cfg
+```
+Create new certificates using OpenSSL binary pointed by mtbulk.cfg (section [certificates_store]).
+
+```
+mt-bulk init-secure-api -C mtbulk.cfg 192.168.1.2 192.168.1.3:222 192.168.1.4:6654
+```
+Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (each device have running ssh on different port) with SSL API and certificates pointed by mtbulk.cfg (section [certificates_store]).
+
+```
+mt-bulk change-password -w 16 -C mtbulk.cfg --new=supersecret --source-db
+```
+Change password to *supersecret* on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
+
 
 ## Operations
 
@@ -82,3 +105,22 @@ Command's options:
 - body: command with parameters, allowed to use regex matches in format %{[prefix][number of numbered capturing group]}
 - match: regexp used to search value in command's output, using Go syntax https://github.com/google/re2/wiki/Syntax 
 - match_prefix: for each match mt-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
+
+
+## Configuration
+
+### Format
+
+Configuration file is written in TOML format (https://github.com/toml-lang/toml)
+
+### Loading sequence 
+
+- Application defaults
+- System (/etc/mt-bulk/config.cfg, /Library/Application Support/MT-bulk/config.cfg)
+- Home (~/.mt-bulk.cfg, ~/Library/Application Support/Uping/config.cfg)
+- Command line -C option
+
+### Credits
+
+Application was developed by Tomasz Kolaj and is licensed under Apache License Version 2.0.
+Please reports bugs at https://github.com/migotom/mt-bulk/issues.

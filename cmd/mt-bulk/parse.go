@@ -64,6 +64,7 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 		if err := service.GenerateCerts(appConfig, "client"); err != nil {
 			return nil, nil, err
 		}
+		return nil, nil, nil
 	}
 
 	if m, _ := arguments["init-secure-api"].(bool); m {
