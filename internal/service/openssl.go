@@ -1,11 +1,18 @@
 package service
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/migotom/mt-bulk/internal/schema"
 )
@@ -14,20 +21,51 @@ import (
 func GenerateCA(config *schema.GeneralConfig) error {
 	log.Println("[CONFIG] Generating CA")
 
-	if _, err := os.Stat(config.Certs.OpenSSL); err != nil {
-		return fmt.Errorf("Missing OpenSSL binary location in config file, %s", err.Error())
-	}
-
 	if _, err := os.Stat(config.Certs.Directory); err != nil {
-		return fmt.Errorf("os stat error: %v", err)
+		return fmt.Errorf("Can't locate certificates directory: %s", err)
 	}
-	ca := filepath.Join(config.Certs.Directory, "ca.crt")
-	key := filepath.Join(config.Certs.Directory, "ca.key")
 
-	cmd := exec.Command(config.Certs.OpenSSL, "req", "-nodes", "-new", "-x509", "-days", "3650", "-subj", "/C=US/ST=US/L=FakeTown/O=IT/CN=ca.cell-crm.com", "-keyout", key, "-out", ca)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("ssl req: %v, %v", err, string(out))
+	privateCA, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("Can't generate CA private key: %s", err)
 	}
+
+	privateCAFile, err := os.OpenFile(filepath.Join(config.Certs.Directory, "ca.key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("Can't create CA private key: %s", err)
+	}
+	pem.Encode(privateCAFile, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateCA)})
+	privateCAFile.Close()
+
+	publicCA := &privateCA.PublicKey
+
+	csrCA := &x509.Certificate{
+		SerialNumber: big.NewInt(1653),
+		Subject: pkix.Name{
+			Organization: []string{"IT"},
+			Country:      []string{"PL"},
+			Province:     []string{"PL"},
+			Locality:     []string{"City"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+	certificateCA, err := x509.CreateCertificate(rand.Reader, csrCA, csrCA, publicCA, privateCA)
+	if err != nil {
+		return fmt.Errorf("Can't generate CA certificate: %s", err)
+	}
+
+	certificateFile, err := os.Create(filepath.Join(config.Certs.Directory, "ca.crt"))
+	if err != nil {
+		return fmt.Errorf("Can't create CA certificate: %s", err)
+	}
+
+	pem.Encode(certificateFile, &pem.Block{Type: "CERTIFICATE", Bytes: certificateCA})
+	certificateFile.Close()
 
 	return nil
 }
@@ -36,35 +74,62 @@ func GenerateCA(config *schema.GeneralConfig) error {
 func GenerateCerts(config *schema.GeneralConfig, subject string) error {
 	log.Println("[CONFIG] Generating " + subject + " certificate")
 
-	if _, err := os.Stat(config.Certs.OpenSSL); err != nil {
-		return fmt.Errorf("Missing OpenSSL binary location in config file, %s", err.Error())
-	}
-
 	if _, err := os.Stat(config.Certs.Directory); err != nil {
-		return fmt.Errorf("os stats error %v", err)
+		return fmt.Errorf("Can't locate certificates directory: %s", err)
 	}
 
-	keyCA := filepath.Join(config.Certs.Directory, "ca.key")
-	crtCA := filepath.Join(config.Certs.Directory, "ca.crt")
-
-	key := filepath.Join(config.Certs.Directory, subject+".key")
-	csr := filepath.Join(config.Certs.Directory, subject+".csr")
-	crt := filepath.Join(config.Certs.Directory, subject+".crt")
-
-	cmd := exec.Command(config.Certs.OpenSSL, "genrsa", "-out", key, "2084")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("ssl genrsa: %v, %v", err, string(out))
+	tlsCA, err := tls.LoadX509KeyPair(filepath.Join(config.Certs.Directory, "ca.crt"), filepath.Join(config.Certs.Directory, "ca.key"))
+	if _, err := os.Stat(config.Certs.Directory); err != nil {
+		return fmt.Errorf("Can't load CA certificate: %s", err)
 	}
 
-	cmd = exec.Command(config.Certs.OpenSSL, "req", "-new", "-subj", "/C=US/ST=US/L=FakeTown/O=IT/CN=mtbulk"+subject+".cell-crm.com", "-key", key, "-out", csr)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("ssl req: %v, %v", err, string(out))
+	certificateCA, err := x509.ParseCertificate(tlsCA.Certificate[0])
+	if err != nil {
+		return fmt.Errorf("Invalid CA certificate: %s", err)
 	}
 
-	cmd = exec.Command(config.Certs.OpenSSL, "x509", "-req", "-days", "3650", "-in", csr, "-CA", crtCA, "-CAkey", keyCA, "-set_serial", "01", "-out", crt)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("ssl x509: %v, %v", err, string(out))
+	private, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("Can't generate %s private key: %s", subject, err)
 	}
+
+	privateFile, err := os.OpenFile(filepath.Join(config.Certs.Directory, subject+".key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("Can't create %s private key: %s", subject, err)
+	}
+	pem.Encode(privateFile, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(private)})
+	privateFile.Close()
+
+	public := &private.PublicKey
+
+	csr := &x509.Certificate{
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			Organization: []string{"IT"},
+			Country:      []string{"PL"},
+			Province:     []string{"PL"},
+			Locality:     []string{"FakeTown"},
+			CommonName:   "mtbulk" + subject + ".cell-crm.com",
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+
+	certificate, err := x509.CreateCertificate(rand.Reader, csr, certificateCA, public, tlsCA.PrivateKey)
+	if err != nil {
+		return fmt.Errorf("Can't generate %s certificate: %s", subject, err)
+	}
+
+	certificateFile, err := os.Create(filepath.Join(config.Certs.Directory, subject+".crt"))
+	if err != nil {
+		return fmt.Errorf("Can't create %s certificate: %s", subject, err)
+	}
+
+	pem.Encode(certificateFile, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
+	certificateFile.Close()
 
 	return nil
 }
