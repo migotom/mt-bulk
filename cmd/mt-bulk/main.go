@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -38,7 +37,7 @@ func loadHosts(hostsLoaders *[]schema.HostsLoaderFunc, hosts *schema.Hosts) {
 	hosts.Reset()
 	for _, hostsLoader := range *hostsLoaders {
 		if err := hosts.Add(hostsLoader); err != nil {
-			log.Fatal(fmt.Errorf("loadHosts fatal error: %v", err))
+			log.Fatalf("[Fatal error] loading hosts error %s\n", err)
 		}
 	}
 }

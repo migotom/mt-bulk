@@ -8,14 +8,13 @@ import (
 )
 
 // FileLoadHosts loads list of hosts from file
-func FileLoadHosts(hostParser schema.HostParserFunc, filename string) ([]schema.Host, error) {
+func FileLoadHosts(hostParser schema.HostParserFunc, filename string) (hosts []schema.Host, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var hosts []schema.Host
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		host, err := hostParser(schema.Host{IP: scanner.Text()})

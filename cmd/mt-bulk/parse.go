@@ -31,16 +31,13 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 
 	// defaults
 	if appConfig.VerifySleep == 0 {
-		appConfig.VerifySleep = 2000
+		appConfig.VerifySleep = 1000
 	}
 	if appConfig.Workers == 0 {
 		appConfig.Workers = 4
 	}
 	if appConfig.Certs.Directory == "" {
 		appConfig.Certs.Directory = "certs/"
-	}
-	if appConfig.Certs.OpenSSL == "" {
-		appConfig.Certs.OpenSSL = "/usr/bin/openssl"
 	}
 
 	// parse args

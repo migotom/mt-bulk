@@ -8,24 +8,22 @@ import (
 	"github.com/migotom/mt-bulk/internal/schema"
 )
 
+const maxRetries = 3
+
 type sqlDB struct {
 	conn     *sql.DB
 	dbConfig *schema.DBConfig
 }
 
-func (d *sqlDB) connect() error {
-	var err error
+func (d *sqlDB) connect() (err error) {
 	d.conn, err = sql.Open(d.dbConfig.Driver, d.dbConfig.Params)
-	if err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
 type retryFunc func() error
 
 func (d *sqlDB) retry(retryFunc retryFunc) (err error) {
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < maxRetries; retries++ {
 		err = retryFunc()
 		if err != nil {
 			// cleanup
@@ -68,9 +66,8 @@ func getDB(dbConfig *schema.DBConfig) *sqlDB {
 
 // DBCleaner closes DB connection.
 func DBCleaner(dbConfig *schema.DBConfig) {
-	db, ok := dbConfig.Connection.(*sqlDB)
-	if ok {
-		defer db.conn.Close()
+	if db, ok := dbConfig.Connection.(*sqlDB); ok {
+		db.conn.Close()
 	}
 }
 
