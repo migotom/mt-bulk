@@ -27,7 +27,6 @@ type Service struct {
 type Certs struct {
 	Directory string
 	Generate  bool
-	OpenSSL   string
 }
 
 type CustomSequence struct {

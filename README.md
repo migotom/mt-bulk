@@ -31,17 +31,12 @@ Options:
   <hosts>...               List of space separated hosts in format IP[:PORT]
 ```
 
-### Dependencies
-
-Application needs OpenSSL to generate device and host certificates (used by operation *gen-certs*).
-Recommended version for Windows: https://slproweb.com/products/Win32OpenSSL.html
-
 ### Examples:
 
 ```
 mt-bulk gen-certs -C mtbulk.cfg
 ```
-Create new certificates using OpenSSL binary pointed by mtbulk.cfg (section [certificates_store]).
+Create new CA, host and device certificates.
 
 ```
 mt-bulk init-secure-api -C mtbulk.cfg 192.168.1.2 192.168.1.3:222 192.168.1.4:6654
