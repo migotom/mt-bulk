@@ -1,6 +1,7 @@
 package mode
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 )
 
 // InitSecureAPIHandler mode initializes device for secure API usage (copies and sets up certificate)
-func InitSecureAPIHandler(config *schema.GeneralConfig, host schema.Host) error {
+func InitSecureAPIHandler(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
 
 	// use SSH to initialize secure API
 	ssh := service.SSH{}
@@ -19,8 +20,10 @@ func InitSecureAPIHandler(config *schema.GeneralConfig, host schema.Host) error 
 	ssh.Host = host
 	log.Printf("[InitSecureAPI] IP %s", host.IP)
 
-	return ssh.HandleSequence(func(ctx interface{}) error {
-		d := ctx.(*service.SSH)
+	return ssh.HandleSequence(ctx, func(payloadService interface{}) error {
+		d := payloadService.(*service.SSH)
+
+		// TODO refactor required for better graceful shutdown
 
 		// copy certificate to device
 		if err := d.CopyFile(filepath.Join(config.Certs.Directory, "device.crt"), "mtbulkdevice.crt"); err != nil {
@@ -41,7 +44,7 @@ func InitSecureAPIHandler(config *schema.GeneralConfig, host schema.Host) error 
 		}
 
 		// execute commands
-		if err := service.ExecuteCommands(ssh, cmds); err != nil {
+		if err := service.ExecuteCommands(ctx, ssh, cmds); err != nil {
 			return fmt.Errorf("executing command error %v", err)
 		}
 

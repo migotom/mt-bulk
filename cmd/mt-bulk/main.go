@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
 
 	docopt "github.com/docopt/docopt-go"
@@ -53,26 +55,38 @@ func main() {
 		log.Fatalf("[Fatal error] Config parser %s\n", err)
 	}
 
+	hostsChan := make(chan schema.Host, appConfig.Workers)
+	resultsChan := make(chan schema.Error, appConfig.Workers)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wgWorkers sync.WaitGroup
+	var wgCollector sync.WaitGroup
+
+	go func() {
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt)
+
+		select {
+		case sig := <-signals:
+			log.Printf("Interrupted by signal: %v\n", sig)
+		}
+		cancel()
+	}()
+
 	var Hosts schema.Hosts
 	loadHosts(&hostsLoaders, &Hosts)
 	if len(Hosts.Get()) == 0 && len(hostsLoaders) > 0 {
 		log.Fatalln("No hosts to process.")
 	}
 
-	hostsChan := make(chan schema.Host, appConfig.Workers)
-	resultsChan := make(chan schema.Error, appConfig.Workers)
-
-	var wgWorkers sync.WaitGroup
-	var wgCollector sync.WaitGroup
-
-	// TODO add graceful shutdown
-
 	wgCollector.Add(1)
 	go mode.ErrorCollector(&appConfig, resultsChan, &wgCollector)
 
 	for i := 1; i <= appConfig.Workers; i++ {
 		wgWorkers.Add(1)
-		go mode.Worker(&appConfig, hostsChan, resultsChan, &wgWorkers)
+		go mode.Worker(ctx, &appConfig, hostsChan, resultsChan, &wgWorkers)
 	}
 
 	for _, host := range Hosts.Get() {

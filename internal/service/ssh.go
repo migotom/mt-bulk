@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -63,19 +64,26 @@ func (d *SSH) getConfig(password string) *ssh.ClientConfig {
 }
 
 // HandleSequence establish connection and executes handler function with sequence of tasks/commands to do.
-func (d *SSH) HandleSequence(handler HandlerFunc) (err error) {
+func (d *SSH) HandleSequence(ctx context.Context, handler HandlerFunc) (err error) {
 	for idx, password := range d.GetPasswords() {
-		log.Printf("[IP:%s][SSH] Initializing connection :%s (using password #%d)", d.GenericDevice.Host.IP, d.GetPort(), idx)
-		sshClientConfig := d.getConfig(password)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			log.Printf("[IP:%s][SSH] Initializing connection :%s (using password #%d)", d.GenericDevice.Host.IP, d.GetPort(), idx)
+			sshClientConfig := d.getConfig(password)
 
-		// establish SSH connection
-		d.sshClient, err = ssh.Dial("tcp", d.GenericDevice.Host.IP+":"+d.GetPort(), sshClientConfig)
-		if err != nil && err.Error() == "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain" {
-			continue
+			// establish SSH connection
+			d.sshClient, err = ssh.Dial("tcp", d.GenericDevice.Host.IP+":"+d.GetPort(), sshClientConfig)
+			if err != nil && err.Error() == "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain" {
+				continue
+			}
+			if err != nil {
+				return fmt.Errorf("SSH handle sequence error %v", err)
+			}
 		}
-		if err != nil {
-			return fmt.Errorf("SSH handle sequence error %v", err)
-		}
+		// store valid password for this device
+		d.GenericDevice.Host.Pass = password
 		break
 	}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -73,8 +74,8 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 			return nil, nil, fmt.Errorf("Missing new password")
 		}
 
-		appConfig.ModeHandler = func(config *schema.GeneralConfig, host schema.Host) error {
-			return mode.ChangePassword(config, host, newPass)
+		appConfig.ModeHandler = func(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
+			return mode.ChangePassword(ctx, config, host, newPass)
 		}
 	}
 	if m, _ := arguments["custom-ssh"].(bool); m {

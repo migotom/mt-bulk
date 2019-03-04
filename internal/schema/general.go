@@ -1,8 +1,11 @@
 package schema
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
-type ModeHandlerFunc func(*GeneralConfig, Host) error
+type ModeHandlerFunc func(context.Context, *GeneralConfig, Host) error
 
 // GeneralConfig main application configuration.
 type GeneralConfig struct {

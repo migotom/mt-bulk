@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -45,7 +46,7 @@ func (d *MTAPI) GetPort() string {
 	return portAPI
 }
 
-func (d *MTAPI) HandleSequence(handler HandlerFunc) error {
+func (d *MTAPI) HandleSequence(ctx context.Context, handler HandlerFunc) error {
 	// load client certificate
 
 	clientCrt := filepath.Join(d.AppConfig.Certs.Directory, "client.crt")
@@ -68,13 +69,20 @@ func (d *MTAPI) HandleSequence(handler HandlerFunc) error {
 	tlsCfg.CipherSuites = append(tlsCfg.CipherSuites, tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA)
 
 	for idx, password := range d.GetPasswords() {
-		log.Printf("[IP:%s][API] Initializing connection :%s (using password #%d)", d.GenericDevice.Host.IP, d.GetPort(), idx)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			log.Printf("[IP:%s][API] Initializing connection :%s (using password #%d)", d.GenericDevice.Host.IP, d.GetPort(), idx)
+			// establish SSH connection
 
-		// establish SSH connection
-		d.mtClient, err = routeros.DialTLS(d.GenericDevice.Host.IP+":"+d.GetPort(), d.GetUser(), password, &tlsCfg, 20*time.Second)
-		if err != nil {
-			continue
+			d.mtClient, err = routeros.DialTLS(d.GenericDevice.Host.IP+":"+d.GetPort(), d.GetUser(), password, &tlsCfg, 10*time.Second)
+			if err != nil {
+				continue
+			}
 		}
+		// store valid password for this device
+		d.GenericDevice.Host.Pass = password
 		break
 	}
 	if err != nil {
