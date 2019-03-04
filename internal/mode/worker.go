@@ -1,6 +1,7 @@
 package mode
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -9,17 +10,26 @@ import (
 )
 
 // Worker grabs devices to handle with configured handler from hosts channel.
-func Worker(appConfig *schema.GeneralConfig, hosts chan schema.Host, errors chan schema.Error, wg *sync.WaitGroup) {
+func Worker(ctx context.Context, appConfig *schema.GeneralConfig, hosts chan schema.Host, errors chan schema.Error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for host := range hosts {
-		if err := appConfig.ModeHandler(appConfig, host); err != nil {
-			if appConfig.IgnoreErrors {
-				log.Println(fmt.Errorf("[IP:%s][error] %s", host.IP, err))
-				errors <- schema.Error{Host: host, Message: err.Error()}
-			} else {
-				log.Panicln(fmt.Errorf("[IP:%s][error] %s", host.IP, err))
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case host, ok := <-hosts:
+			if !ok {
+				return
+			}
+			if err := appConfig.ModeHandler(ctx, appConfig, host); err != nil {
+				if appConfig.IgnoreErrors {
+					log.Println(fmt.Errorf("[IP:%s][error] %s", host.IP, err))
+					errors <- schema.Error{Host: host, Message: err.Error()}
+				} else {
+					log.Panicln(fmt.Errorf("[IP:%s][error] %s", host.IP, err))
+				}
 			}
 		}
+
 	}
 }
 
