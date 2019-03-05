@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
-	"os/signal"
-	"sync"
 
 	docopt "github.com/docopt/docopt-go"
-	"github.com/migotom/mt-bulk/internal/mode"
+	mtbulk "github.com/migotom/mt-bulk/internal/mt-bulk"
 	"github.com/migotom/mt-bulk/internal/schema"
 )
 
@@ -33,16 +30,7 @@ Options:
   --source-file=<file-in>  Load hosts from file <file-in>
 `
 
-const version = "1.1"
-
-func loadHosts(hostsLoaders *[]schema.HostsLoaderFunc, hosts *schema.Hosts) {
-	hosts.Reset()
-	for _, hostsLoader := range *hostsLoaders {
-		if err := hosts.Add(hostsLoader); err != nil {
-			log.Fatalf("[Fatal error] loading hosts error %s\n", err)
-		}
-	}
-}
+const version = "1.2"
 
 func main() {
 	arguments, _ := docopt.ParseArgs(usage, os.Args[1:], version)
@@ -55,47 +43,9 @@ func main() {
 		log.Fatalf("[Fatal error] Config parser %s\n", err)
 	}
 
-	hostsChan := make(chan schema.Host, appConfig.Workers)
-	resultsChan := make(chan schema.Error, appConfig.Workers)
+	service := mtbulk.NewService(&appConfig, hostsLoaders)
+	service.Start()
+	service.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wgWorkers sync.WaitGroup
-	var wgCollector sync.WaitGroup
-
-	go func() {
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt)
-
-		select {
-		case sig := <-signals:
-			log.Printf("Interrupted by signal: %v\n", sig)
-		}
-		cancel()
-	}()
-
-	var Hosts schema.Hosts
-	loadHosts(&hostsLoaders, &Hosts)
-	if len(Hosts.Get()) == 0 && len(hostsLoaders) > 0 {
-		log.Fatalln("No hosts to process.")
-	}
-
-	wgCollector.Add(1)
-	go mode.ErrorCollector(&appConfig, resultsChan, &wgCollector)
-
-	for i := 1; i <= appConfig.Workers; i++ {
-		wgWorkers.Add(1)
-		go mode.Worker(ctx, &appConfig, hostsChan, resultsChan, &wgWorkers)
-	}
-
-	for _, host := range Hosts.Get() {
-		hostsChan <- host
-	}
-
-	close(hostsChan)
-	wgWorkers.Wait()
-
-	close(resultsChan)
-	wgCollector.Wait()
+	os.Exit(0)
 }
