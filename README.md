@@ -31,7 +31,11 @@ Options:
   <hosts>...               List of space separated hosts in format IP[:PORT]
 ```
 
-### Examples:
+## Download
+
+Current and historical releases of MT-Bulk https://github.com/migotom/mt-bulk/releases
+
+## Examples
 
 ```
 mt-bulk gen-certs -C mtbulk.cfg
