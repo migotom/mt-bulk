@@ -44,7 +44,7 @@ type Command struct {
 	MatchPrefix  string `toml:"match_prefix"`
 	Match        string `toml:"match"`
 
-	Sleep  Duration
+	Sleep  Duration `toml:"sleep"`
 	Result string
 }
 
