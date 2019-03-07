@@ -57,6 +57,7 @@ func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) 
 			}
 
 			if c.Sleep.Duration > 0 {
+				log.Printf("[IP:%s] (sleep %s)\n", dev.Host.IP, c.Sleep.Duration)
 				time.Sleep(c.Sleep.Duration)
 			}
 
