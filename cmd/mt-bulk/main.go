@@ -24,19 +24,20 @@ Options:
   -C <config-file>         Use configuration file, e.g. certs locations, ports, commands sequences, custom commands, etc...
   -s                       Be quiet and don't print commands and commands results to standard output
   -w <workers>             Number of parallel connections to run (default: 4)
+  --skip-version-check     Skip checking for new version
   --skip-summary           Skip errors summary
   --exit-on-error          In case of any error stop executing commands
   --source-db              Load hosts using database configured by -C <config-file>
   --source-file=<file-in>  Load hosts from file <file-in>
 `
 
-const version = "1.3"
+const version = "1.4"
 
 func main() {
 	arguments, _ := docopt.ParseArgs(usage, os.Args[1:], version)
-	//fmt.Println(arguments)
+	//	fmt.Println(arguments)
 
-	appConfig := schema.GeneralConfig{}
+	appConfig := schema.GeneralConfig{Version: version}
 
 	hostsLoaders, _, err := configParser(arguments, &appConfig)
 	if err != nil {

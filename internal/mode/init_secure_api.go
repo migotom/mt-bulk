@@ -44,7 +44,7 @@ func InitSecureAPIHandler(ctx context.Context, config *schema.GeneralConfig, hos
 		}
 
 		// execute commands
-		if err := service.ExecuteCommands(ctx, ssh, cmds); err != nil {
+		if err := service.ExecuteCommands(ctx, &ssh, cmds); err != nil {
 			return fmt.Errorf("executing command error %v", err)
 		}
 

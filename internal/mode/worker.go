@@ -52,7 +52,9 @@ func ErrorCollector(appConfig *schema.GeneralConfig, errors chan schema.Error, w
 	fmt.Println()
 	fmt.Println("Errors list:")
 	for host, errors := range hostsErrors {
-		fmt.Printf("Device: %s:%s\n", host.IP, host.Port)
+		if host.IP != "" {
+			fmt.Printf("Device: %s:%s\n", host.IP, host.Port)
+		}
 
 		for _, error := range errors {
 			fmt.Printf("\t%s\n", error)
