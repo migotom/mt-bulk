@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -44,6 +45,11 @@ func (d *MTAPI) GetPort() string {
 		return d.Host.Port
 	}
 	return portAPI
+}
+
+// Close used session
+func (d *MTAPI) Close() error {
+	return nil
 }
 
 func (d *MTAPI) HandleSequence(ctx context.Context, handler HandlerFunc) error {
@@ -101,13 +107,17 @@ func (d *MTAPI) HandleSequence(ctx context.Context, handler HandlerFunc) error {
 	return handler(d)
 }
 
-func (d MTAPI) RunCmd(body string) (string, error) {
+func (d MTAPI) RunCmd(body string, expect *regexp.Regexp) (result string, err error) {
 	r, err := d.mtClient.RunArgs(strings.Split(body, " "))
 	if err != nil {
 		return "", err
 	}
 
-	return r.String(), nil
+	if expect != nil {
+		_, err = d.expect(strings.NewReader(r.String()), expect)
+	}
+
+	return r.String(), err
 }
 
 func (d MTAPI) GetDevice() *GenericDevice {

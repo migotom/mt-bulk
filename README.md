@@ -22,6 +22,7 @@ Options:
   -s                       Be quiet and don't print commands and commands results to standard output
   -w <workers>             Number of parallel connections to run (default: 4)
 
+  --skip-version-check     Skip checking for new version
   --skip-summary           Skip errors summary
   --exit-on-error          In case of any error stop executing commands
 
@@ -85,6 +86,7 @@ Initialize Mikrotik device to use secure API with mt-bulk. Operation uploads to 
 ### change-password
 
 Change password to given new one with option --new=< newpass >
+Important note: operation require SSL API already initialized.
 
 ### custom-api and custom-ssh
 
@@ -105,6 +107,7 @@ sleep = "100ms"
 Command's options:
 - body: command with parameters, allowed to use regex matches in format %{[prefix][number of numbered capturing group]}
 - sleep: wait given time duration after executing command, required by some commands (e.g. `/system upgrade refresh`)
+- expect: regexp used to verify that command's response match expected value
 - match: regexp used to search value in command's output, using Go syntax https://github.com/google/re2/wiki/Syntax 
 - match_prefix: for each match mt-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
 

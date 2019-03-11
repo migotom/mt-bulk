@@ -28,6 +28,7 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 
 	appConfig.Verbose = !arguments["-s"].(bool)
 	appConfig.SkipSummary = arguments["--skip-summary"].(bool)
+	appConfig.SkipVersionCheck = arguments["--skip-version-check"].(bool)
 	appConfig.IgnoreErrors = !arguments["--exit-on-error"].(bool)
 
 	// defaults

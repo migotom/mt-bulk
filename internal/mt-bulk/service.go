@@ -3,6 +3,7 @@ package mtbulk
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -39,6 +40,22 @@ func (s *Service) Start() error {
 	var ctx context.Context
 	ctx, s.cancel = context.WithCancel(context.Background())
 
+	// check app version
+	s.wgWorkers.Add(1)
+	go func() {
+		defer s.wgWorkers.Done()
+
+		if s.appConfig.SkipVersionCheck {
+			return
+		}
+		if err := checkVersion(s.appConfig.Version); err != nil {
+			s.resultsChannel <- schema.Error{
+				Message: fmt.Sprintf("[Warrning] %s", err),
+			}
+		}
+	}()
+
+	// gracefull exit
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt)

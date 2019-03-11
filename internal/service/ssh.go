@@ -1,12 +1,12 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,6 +19,12 @@ const portSSH = "22"
 // SSH defines SSH service by extending generic device with ssh specific client connection details.
 type SSH struct {
 	sshClient *ssh.Client
+	session   *ssh.Session
+
+	stdoutBuf io.Reader
+	stdinBuf  io.WriteCloser
+	prompt    *regexp.Regexp
+
 	GenericDevice
 }
 
@@ -50,12 +56,12 @@ func (d *SSH) GetPort() string {
 func (d *SSH) getConfig(password string) *ssh.ClientConfig {
 	var sshconfig ssh.Config
 	sshconfig.SetDefaults()
-	sshconfig.Ciphers = append(sshconfig.Ciphers, "aes128-cbc", "3des-cbc")
+	sshconfig.Ciphers = append(sshconfig.Ciphers, "aes128-cbc", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc")
 
 	return &ssh.ClientConfig{
 		Config:  sshconfig,
 		Timeout: 30 * time.Second,
-		User:    d.GetUser(),
+		User:    d.GetUser() + "+ct", // Mikrotik hack to avoid detecting terminal capabilities and disable colors
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
@@ -92,6 +98,7 @@ func (d *SSH) HandleSequence(ctx context.Context, handler HandlerFunc) (err erro
 	}
 
 	defer d.sshClient.Close()
+	defer d.Close()
 
 	d.matches = make(map[string]string)
 
@@ -127,23 +134,70 @@ func (d *SSH) CopyFile(local, remote string) error {
 	return nil
 }
 
-// RunCmd runs a command using SSH and returns result.
-func (d SSH) RunCmd(body string) (string, error) {
-	session, err := d.sshClient.NewSession()
-	if err != nil {
-		return "", err
-	}
-	defer session.Close()
+// Close used session
+func (d *SSH) Close() error {
+	defer d.session.Close()
+	d.stdinBuf.Write([]byte("/quit\r"))
 
-	var b bytes.Buffer
-	session.Stdout = &b
-	if err := session.Run(body); err != nil {
-		return "", err
+	if err := d.session.Wait(); err != nil {
+		return fmt.Errorf("remote command did not exit cleanly: %v", err)
 	}
-
-	return b.String(), nil
+	return nil
 }
 
-func (d SSH) GetDevice() *GenericDevice {
+// RunCmd runs a command using SSH and returns result.
+func (d *SSH) RunCmd(body string, expect *regexp.Regexp) (result string, err error) {
+	if err = d.initializeSession(); err != nil {
+		return
+	}
+
+	d.stdinBuf.Write([]byte(body + "\r"))
+
+	if expect != nil {
+		result, err = d.expect(d.stdoutBuf, expect)
+	} else {
+		result, err = d.expect(d.stdoutBuf, d.prompt)
+	}
+
+	return
+}
+
+func (d *SSH) GetDevice() *GenericDevice {
 	return &d.GenericDevice
+}
+
+func (d *SSH) initializeSession() (err error) {
+	if d.session != nil {
+		return nil
+	}
+
+	d.prompt = regexp.MustCompile(`(?sm)\[.*@.*\] >.{0,1}$`)
+
+	if d.session, err = d.sshClient.NewSession(); err != nil {
+		return fmt.Errorf("session initializing error: %s", err)
+	}
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.ECHOCTL:       0,
+		ssh.TTY_OP_ISPEED: 115200,
+		ssh.TTY_OP_OSPEED: 115200,
+	}
+	d.session.Stderr = os.Stderr
+
+	if err = d.session.RequestPty("xterm", 500, 200, modes); err != nil {
+		return fmt.Errorf("request for pseudo terminal failed: %s", err)
+	}
+	if d.stdoutBuf, err = d.session.StdoutPipe(); err != nil {
+		return fmt.Errorf("request for stdout pipe failed: %s", err)
+	}
+	if d.stdinBuf, err = d.session.StdinPipe(); err != nil {
+		return fmt.Errorf("request for stdin pipe failed: %s", err)
+	}
+	if err = d.session.Shell(); err != nil {
+		return fmt.Errorf("failed to start shell: %s", err)
+	}
+
+	_, err = d.expect(d.stdoutBuf, d.prompt)
+	return
 }
