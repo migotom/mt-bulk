@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"regexp"
 	"strings"
@@ -16,8 +17,9 @@ type HandlerFunc func(context interface{}) error
 
 // Service represents common interface for all supported services.
 type Service interface {
-	RunCmd(string) (string, error)
+	RunCmd(string, *regexp.Regexp) (string, error)
 	GetDevice() *GenericDevice
+	Close() error
 }
 
 // GenericDevice defines basic setup for device instance.
@@ -28,9 +30,54 @@ type GenericDevice struct {
 	matches            map[string]string
 }
 
+// expect reads bytes from reader and waits for timeout or expectec regexp value
+func (d *GenericDevice) expect(reader io.Reader, expect *regexp.Regexp) (result string, err error) {
+	resultChan := make(chan string)
+	errorChan := make(chan struct{})
+
+	go func() {
+		defer close(resultChan)
+		defer close(errorChan)
+
+		var s strings.Builder
+		for {
+			time.Sleep(time.Millisecond * 100)
+
+			buf := make([]byte, 1024*10)
+			byteCount, err := reader.Read(buf)
+			if err != nil {
+				errorChan <- struct{}{}
+				return
+			}
+
+			s.WriteString(string(buf[:byteCount]))
+			parsedResponse := regexp.MustCompile("\r").ReplaceAllString(s.String(), "")
+
+			if expect.MatchString(parsedResponse) {
+				resultChan <- parsedResponse
+				break
+			}
+		}
+	}()
+
+	for {
+		select {
+		case result = <-resultChan:
+			return
+		case <-errorChan:
+			err = fmt.Errorf("expected result %s", expect.String())
+			return
+		case <-time.After(10 * time.Second):
+			err = fmt.Errorf("timeout of waiting to expected result %s", expect.String())
+			return
+		}
+	}
+}
+
 // ExecuteCommands executes provided list of commands using specified service.
-func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) error {
+func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) (err error) {
 	dev := d.GetDevice()
+
 	for _, c := range commands {
 		select {
 		case <-ctx.Done():
@@ -38,22 +85,25 @@ func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) 
 		default:
 			for match, value := range dev.matches {
 				fmt.Printf("checking match:%s (replace with value %s)\n", match, value)
-				re := regexp.MustCompile(match)
-				c.Body = re.ReplaceAllString(c.Body, value)
+				c.Body = regexp.MustCompile(match).ReplaceAllString(c.Body, value)
 			}
 
 			if dev.AppConfig.Verbose {
-				log.Printf("[IP:%s]> %s\n", dev.Host.IP, c.Body)
+				log.Printf("[IP:%s] < %s\n", dev.Host.IP, c.Body)
 			}
 
-			var err error
-			c.Result, err = d.RunCmd(c.Body)
-			if err != nil {
-				return err
+			var expect *regexp.Regexp
+			if c.Expect != "" {
+				expect = regexp.MustCompile(c.Expect)
+			}
+
+			if c.Result, err = d.RunCmd(c.Body, expect); err != nil {
+				return fmt.Errorf("command processing error: %s", err)
 			}
 
 			if dev.AppConfig.Verbose {
-				log.Printf("[IP:%s]< %s\n", dev.Host.IP, c.Result)
+				log.Printf("[IP:%s] > %s\n", dev.Host.IP, c.Result)
+
 			}
 
 			if c.Sleep.Duration > 0 {
@@ -61,22 +111,11 @@ func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) 
 				time.Sleep(c.Sleep.Duration)
 			}
 
-			if c.Match != "" {
-				re := regexp.MustCompile(c.Match)
-				if matches := re.FindStringSubmatch(c.Result); len(matches) > 1 {
-					for i := 1; i < len(matches); i++ {
-						dev.matches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i)] = matches[i]
-						fmt.Printf("found: key:%s value:%v\n", fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i), matches[i])
-					}
+			if matches := regexp.MustCompile(c.Match).FindStringSubmatch(c.Result); len(matches) > 1 {
+				for i := 1; i < len(matches); i++ {
+					dev.matches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i)] = matches[i]
+					fmt.Printf("found: key:%s value:%v\n", fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i), matches[i])
 				}
-			}
-
-			if c.SkipExpected {
-				continue
-			}
-
-			if ok := strings.Contains(c.Result, c.Expect); !ok {
-				return fmt.Errorf("Expected result to contain %s", c.Expect)
 			}
 		}
 	}
