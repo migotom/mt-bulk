@@ -13,17 +13,15 @@ import (
 
 // InitSecureAPIHandler mode initializes device for secure API usage (copies and sets up certificate)
 func InitSecureAPIHandler(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
-
-	// use SSH to initialize secure API
-	ssh := service.SSH{}
-	ssh.AppConfig = config
-	ssh.Host = host
+	ssh := config.Service["ssh"].Interface.(service.Service)
+	ssh.SetConfig(config)
+	ssh.SetHost(host)
 	log.Printf("[InitSecureAPI] IP %s", host.IP)
 
-	return ssh.HandleSequence(ctx, func(payloadService interface{}) error {
-		d := payloadService.(*service.SSH)
+	return ssh.HandleSequence(ctx, func(payloadService service.Service) error {
+		d := payloadService.(service.CopyFiler)
 
-		// TODO refactor required for better graceful shutdown
+		// TODO refactor required for better graceful shutdown while SFTP operation in progress
 
 		// copy certificate to device
 		if err := d.CopyFile(filepath.Join(config.Certs.Directory, "device.crt"), "mtbulkdevice.crt"); err != nil {
@@ -43,8 +41,7 @@ func InitSecureAPIHandler(ctx context.Context, config *schema.GeneralConfig, hos
 			{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`},
 		}
 
-		// execute commands
-		if err := service.ExecuteCommands(ctx, &ssh, cmds); err != nil {
+		if err := service.ExecuteCommands(ctx, payloadService, cmds); err != nil {
 			return fmt.Errorf("executing command error %v", err)
 		}
 

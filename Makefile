@@ -18,11 +18,14 @@ VERSION=1.4
 
 # Build
 all: build
-build: build-prepare build-linux-amd64 build-linux-386 build-darwin-amd64 build-win-amd64 clean
+build: test build-prepare build-linux-amd64 #build-linux-386 build-darwin-amd64 build-win-amd64 clean
 
 # Clean
 clean:
 	rm -R $(BUILD_DIR)/*
+
+test:
+	$(GOCMD) test ./...
 
 build-prepare:
 	[ -d $(BUILD_DIR)/mt-bulk/certs ] || mkdir -p $(BUILD_DIR)/mt-bulk/certs

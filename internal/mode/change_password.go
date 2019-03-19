@@ -7,28 +7,17 @@ import (
 	"github.com/migotom/mt-bulk/internal/service"
 )
 
-// ChangePassword mode ...
+// ChangePassword mode changes device's admin password.
 func ChangePassword(ctx context.Context, config *schema.GeneralConfig, host schema.Host, newPass string) error {
+	mt := config.Service["mikrotik_api"].Interface.(service.Service)
+	mt.SetConfig(config)
+	mt.SetHost(host)
 
-	// use MT API
-	mt := service.MTAPI{}
-	mt.AppConfig = config
-	mt.Host = host
-
-	return mt.HandleSequence(ctx, func(payloadService interface{}) error {
-		d := payloadService.(*service.MTAPI)
-
-		// prepare sequence of commands to run on device
+	return mt.HandleSequence(ctx, func(payloadService service.Service) error {
 		cmds := []schema.Command{
 			{Body: `/user/set =numbers=admin =password=` + newPass, Expect: "!done"},
 		}
-
-		// execute commands
-		if err := service.ExecuteCommands(ctx, d, cmds); err != nil {
-			return err
-		}
-
-		return nil
+		return service.ExecuteCommands(ctx, payloadService, cmds)
 	})
 
 }

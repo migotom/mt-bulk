@@ -13,13 +13,26 @@ import (
 )
 
 // HandlerFunc executes sequence of operations in context of service using established already connection and passed by context into handler.
-type HandlerFunc func(context interface{}) error
+type HandlerFunc func(service Service) error
 
 // Service represents common interface for all supported services.
 type Service interface {
-	RunCmd(string, *regexp.Regexp) (string, error)
+	GetUser() string
+	GetPasswords() []string
+	GetPort() string
 	GetDevice() *GenericDevice
+
+	SetHost(schema.Host)
+	SetConfig(*schema.GeneralConfig)
+
+	HandleSequence(ctx context.Context, handler HandlerFunc) error
+	RunCmd(string, *regexp.Regexp) (string, error)
+
 	Close() error
+}
+
+type CopyFiler interface {
+	CopyFile(local, remote string) error
 }
 
 // GenericDevice defines basic setup for device instance.
@@ -28,6 +41,14 @@ type GenericDevice struct {
 	Host               schema.Host
 	currentPasswordIdx int
 	matches            map[string]string
+}
+
+func (d *GenericDevice) SetHost(host schema.Host) {
+	d.Host = host
+}
+
+func (d *GenericDevice) SetConfig(config *schema.GeneralConfig) {
+	d.AppConfig = config
 }
 
 // expect reads bytes from reader and waits for timeout or expectec regexp value
@@ -103,7 +124,6 @@ func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) 
 
 			if dev.AppConfig.Verbose {
 				log.Printf("[IP:%s] > %s\n", dev.Host.IP, c.Result)
-
 			}
 
 			if c.Sleep.Duration > 0 {

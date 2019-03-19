@@ -17,7 +17,7 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	var hostsLoaders []schema.HostsLoaderFunc
 	var cleaners []schema.HostsCleanerFunc
 
-	appConfig.Service = make(map[string]schema.Service)
+	appConfig.Service = make(map[string]*schema.Service)
 
 	// config file
 	var apiConfigFile string
@@ -30,6 +30,9 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	appConfig.SkipSummary = arguments["--skip-summary"].(bool)
 	appConfig.SkipVersionCheck = arguments["--skip-version-check"].(bool)
 	appConfig.IgnoreErrors = !arguments["--exit-on-error"].(bool)
+
+	// TODO
+	// add verification of existence in config mikrotik_api and ssh
 
 	// defaults
 	if appConfig.VerifySleep == 0 {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/migotom/mt-bulk/internal/mode"
 	"github.com/migotom/mt-bulk/internal/schema"
+	"github.com/migotom/mt-bulk/internal/service"
 )
 
 type Service struct {
@@ -27,6 +28,9 @@ type Service struct {
 }
 
 func NewService(appConfig *schema.GeneralConfig, hostsLoaderFuncs []schema.HostsLoaderFunc) *Service {
+	appConfig.Service["mikrotik_api"].Interface = &service.MTAPI{}
+	appConfig.Service["ssh"].Interface = &service.SSH{}
+
 	return &Service{
 		appConfig:        appConfig,
 		hostsLoaderFuncs: hostsLoaderFuncs,

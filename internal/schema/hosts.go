@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,10 @@ type Host struct {
 	Pass string
 }
 
+func (h Host) String() string {
+	return fmt.Sprintf("ID:%d IP:%s Port:%s User:%s Pass:%s", h.ID, h.IP, h.Port, h.User, h.Pass)
+}
+
 // Hosts defines list of hosts to use.
 type Hosts struct {
 	hosts []Host
@@ -33,23 +38,25 @@ func (h *Hosts) parseHost(oldHost Host) (Host, error) {
 
 	list := strings.Split(oldHost.IP, ":")
 	if len(list) > 2 {
+		// does not meet format IP:PORT
 		return Host{}, fmt.Errorf(fmt.Sprintf("Host invalid format: %s", oldHost.IP))
 	}
 
 	if len(list) == 2 {
+		port, err := strconv.Atoi(list[1])
+		if err != nil || port < 0 || port > 65535 {
+			return Host{}, fmt.Errorf("Port invalid format: %s", list[1])
+		}
 		newHost.Port = list[1]
 	}
 
-	//TODO
-	//refactor for range hosts
-	ipaddr, err := net.ResolveIPAddr("ip", list[0])
-	if err == nil {
+	// TODO refactor for range hosts, e.g. 192.168.1.1-192.168.1.100
+	if ipaddr, err := net.ResolveIPAddr("ip", list[0]); err == nil {
 		newHost.IP = ipaddr.IP.String()
 		return newHost, nil
 	}
 
-	IP, _, err := net.ParseCIDR(oldHost.IP)
-	if err == nil {
+	if IP, _, err := net.ParseCIDR(oldHost.IP); err == nil {
 		newHost.IP = IP.String()
 		return newHost, nil
 	}

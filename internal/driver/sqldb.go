@@ -22,10 +22,11 @@ func (d *sqlDB) connect() (err error) {
 
 type retryFunc func() error
 
-func (d *sqlDB) retry(retryFunc retryFunc) (err error) {
+// retry tries to process operation and reconnects if got mysql error.
+// TODO add retryable errors
+func (d *sqlDB) retry(operation retryFunc) (err error) {
 	for retries := 0; retries < maxRetries; retries++ {
-		err = retryFunc()
-		if err != nil {
+		if err = operation(); err != nil {
 			// cleanup
 			d.conn.Close()
 
@@ -38,6 +39,7 @@ func (d *sqlDB) retry(retryFunc retryFunc) (err error) {
 	return
 }
 
+// Query database and return rows as result of query.
 func (d *sqlDB) Query(query string, args ...interface{}) (rows *sql.Rows, err error) {
 	err = d.retry(func() error {
 		rows, err = d.conn.Query(query, args...)
@@ -46,6 +48,7 @@ func (d *sqlDB) Query(query string, args ...interface{}) (rows *sql.Rows, err er
 	return
 }
 
+// Execute query on database and return result.
 func (d *sqlDB) Exec(query string, args ...interface{}) (result sql.Result, err error) {
 	err = d.retry(func() error {
 		result, err = d.conn.Exec(query, args...)
@@ -89,20 +92,18 @@ func DBSqlLoadHosts(hostParser schema.HostParserFunc, dbConfig *schema.DBConfig)
 	for rows.Next() {
 		host := schema.Host{}
 
-		err = rows.Scan(&host.ID, &host.IP)
-		if err != nil {
+		if err = rows.Scan(&host.ID, &host.IP); err != nil {
 			return nil, err
 		}
-		host, err = hostParser(host)
-		if err != nil {
+
+		if host, err = hostParser(host); err != nil {
 			return nil, err
 		}
 
 		hosts = append(hosts, host)
 	}
 
-	err = rows.Err()
-	if err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
