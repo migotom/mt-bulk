@@ -14,7 +14,7 @@ BUILD_DIR=build
 CONFIG_EXAMPLE=mt-bulk.example.cfg
 HOSTS_EXAMPLE=hosts.example.txt
 README=README.md
-VERSION=1.4
+VERSION=1.5
 
 # Build
 all: build
