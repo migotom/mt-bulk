@@ -13,7 +13,7 @@ func TestCustomAPI(t *testing.T) {
 	MTAPI := mocks.Service{}
 
 	appConfig := schema.GeneralConfig{
-		CustomAPISequence: schema.CustomSequence{
+		CustomAPISequence: &schema.CustomSequence{
 			Command: []schema.Command{
 				schema.Command{Body: "/user/print"},
 			},
@@ -36,7 +36,7 @@ func TestCustomSSH(t *testing.T) {
 	SSHAPI := mocks.Service{}
 
 	appConfig := schema.GeneralConfig{
-		CustomSSHSequence: schema.CustomSequence{
+		CustomSSHSequence: &schema.CustomSequence{
 			Command: []schema.Command{
 				schema.Command{Body: "/user print"},
 			},
