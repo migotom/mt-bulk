@@ -11,8 +11,8 @@ Usage:
   mt-bulk gen-certs [options]
   mt-bulk init-secure-api [options] [<hosts>...]
   mt-bulk change-password (--new=<newpass>) [options] [<hosts>...]  
-  mt-bulk custom-api [--custom-args=<custom-args>] [options] [<hosts>...]  
-  mt-bulk custom-ssh [--custom-args=<custom-args>] [options] [<hosts>...]  
+  mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
+  mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk -h | --help
   mt-bulk --version
 
@@ -85,14 +85,14 @@ Initialize Mikrotik device to use secure API with mt-bulk. Operation uploads to 
 
 ### change-password
 
-Change password to given new one with option --new=< newpass >
+Change password to given new one with option `--new=<newpass>`
 Important note: operation require SSL API already initialized.
 
 ### custom-api and custom-ssh
 
-Send sequence of commands defined in configuration file.
+Send sequence of commands defined in configuration file:
 
-Sample:
+Example:
 ```
 [[custom-ssh.command]]
 body = "/certificate print detail"
@@ -109,6 +109,14 @@ expect = "password:"
 body = "my_password"
 ```
 
+Sequences may be also defined in separate files and provided to MT-bulk by `--commands-file=<file name>`:
+
+Example SSH command:
+```
+[[command]]
+body = "/user print"
+```
+
 Command's options:
 - body: command with parameters, allowed to use regex matches in format %{[prefix][number of numbered capturing group]}
 - sleep: wait given time duration after executing command, required by some commands (e.g. `/system upgrade refresh`)
@@ -116,6 +124,7 @@ Command's options:
 - match: regexp used to search value in command's output, using Go syntax https://github.com/google/re2/wiki/Syntax 
 - match_prefix: for each match mt-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
 
+More examples at `mt-bulk.example.cfg` and `example-commands\` folder.
 
 ## Configuration
 
