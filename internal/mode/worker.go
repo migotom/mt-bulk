@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/migotom/mt-bulk/internal/schema"
+	"github.com/migotom/mt-bulk/internal/service"
 )
 
 // Worker grabs devices to handle with configured handler from hosts channel.
@@ -33,7 +34,8 @@ func Worker(ctx context.Context, appConfig *schema.GeneralConfig, hosts chan sch
 	}
 }
 
-func ErrorCollector(appConfig *schema.GeneralConfig, errors chan schema.Error, wg *sync.WaitGroup) {
+// ErrorCollector collects and parde all errors produced by workers.
+func ErrorCollector(appConfig *schema.GeneralConfig, errors chan schema.Error, status *service.ApplicationStatus, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	hostsErrors := make(map[schema.Host][]string)
@@ -44,6 +46,8 @@ func ErrorCollector(appConfig *schema.GeneralConfig, errors chan schema.Error, w
 	if len(hostsErrors) == 0 {
 		return
 	}
+
+	status.SetCode(1)
 
 	if appConfig.SkipSummary {
 		return

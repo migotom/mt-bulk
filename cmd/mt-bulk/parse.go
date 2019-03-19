@@ -82,11 +82,26 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 			return mode.ChangePassword(ctx, config, host, newPass)
 		}
 	}
+
 	if m, _ := arguments["custom-ssh"].(bool); m {
 		appConfig.ModeHandler = mode.CustomSSH
+
+		appConfig.CustomSSHSequence.Command = nil
+		if f, ok := arguments["--commands-file"].(string); ok {
+			if err := config.LoadConfigFile(appConfig.CustomSSHSequence, f); err != nil {
+				return nil, nil, err
+			}
+		}
 	}
 	if m, _ := arguments["custom-api"].(bool); m {
 		appConfig.ModeHandler = mode.CustomAPI
+
+		appConfig.CustomAPISequence.Command = nil
+		if f, ok := arguments["--commands-file"].(string); ok {
+			if err := config.LoadConfigFile(appConfig.CustomAPISequence, f); err != nil {
+				return nil, nil, err
+			}
+		}
 	}
 
 	if hosts, ok := arguments["<hosts>"].([]string); ok {

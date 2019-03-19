@@ -14,10 +14,12 @@ import (
 	"github.com/migotom/mt-bulk/internal/service"
 )
 
+// Service represents MT-bulk as service.
 type Service struct {
 	appConfig        *schema.GeneralConfig
 	hostsLoaderFuncs []schema.HostsLoaderFunc
 	hosts            schema.Hosts
+	Status           service.ApplicationStatus
 
 	hostsChannel   chan schema.Host
 	resultsChannel chan schema.Error
@@ -27,6 +29,7 @@ type Service struct {
 	cancel      context.CancelFunc
 }
 
+// NewService builds new MT-bulk service.
 func NewService(appConfig *schema.GeneralConfig, hostsLoaderFuncs []schema.HostsLoaderFunc) *Service {
 	appConfig.Service["mikrotik_api"].Interface = &service.MTAPI{}
 	appConfig.Service["ssh"].Interface = &service.SSH{}
@@ -40,6 +43,7 @@ func NewService(appConfig *schema.GeneralConfig, hostsLoaderFuncs []schema.Hosts
 	}
 }
 
+// Start service, run workers and prepare self to gracefull exit if needed.
 func (s *Service) Start() error {
 	var ctx context.Context
 	ctx, s.cancel = context.WithCancel(context.Background())
@@ -76,7 +80,7 @@ func (s *Service) Start() error {
 	}
 
 	s.wgCollector.Add(1)
-	go mode.ErrorCollector(s.appConfig, s.resultsChannel, &s.wgCollector)
+	go mode.ErrorCollector(s.appConfig, s.resultsChannel, &s.Status, &s.wgCollector)
 
 	for i := 1; i <= s.appConfig.Workers; i++ {
 		s.wgWorkers.Add(1)
@@ -89,7 +93,8 @@ func (s *Service) Start() error {
 	return nil
 }
 
-func (s *Service) Close() {
+// Close service.
+func (s *Service) Close() int {
 	defer s.cancel()
 
 	close(s.hostsChannel)
@@ -97,6 +102,8 @@ func (s *Service) Close() {
 
 	close(s.resultsChannel)
 	s.wgCollector.Wait()
+
+	return s.Status.Get()
 }
 
 func (s *Service) loadHosts() error {
