@@ -17,7 +17,7 @@ type GeneralConfig struct {
 	Workers           int   `toml:"workers"`
 	VerifySleep       int   `toml:"verify_check_sleep"`
 	Certs             Certs `toml:"certificates_store"`
-	Service           map[string]Service
+	Service           map[string]*Service
 	ModeHandler       ModeHandlerFunc
 	DB                DBConfig
 	CustomSSHSequence CustomSequence `toml:"custom-ssh"`
@@ -25,10 +25,12 @@ type GeneralConfig struct {
 }
 
 type Service struct {
-	DefaultPort string `toml:"port"`
-	DefaultUser string `toml:"user"`
-	DefaultPass string `toml:"password"`
+	DefaultPort string      `toml:"port"`
+	DefaultUser string      `toml:"user"`
+	DefaultPass string      `toml:"password"`
+	Interface   interface{} `toml:"-"`
 }
+
 type Certs struct {
 	Directory string
 	Generate  bool
@@ -49,10 +51,12 @@ type Command struct {
 	Result string
 }
 
+// Duration type.
 type Duration struct {
 	time.Duration
 }
 
+// UnmarshalText does unmarshal time duration format.
 func (d *Duration) UnmarshalText(text []byte) error {
 	var err error
 	d.Duration, err = time.ParseDuration(string(text))

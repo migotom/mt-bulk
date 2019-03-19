@@ -102,6 +102,11 @@ match = '(?m)^\s+(\d+).*mtbulkdevice'
 [[custom-ssh.command]]
 body = "/certificate remove %{c1}"
 sleep = "100ms"
+[[custom-ssh.command]]
+body = "/system upgrade upgrade-package-source add address=10.0.0.1 user=test"
+expect = "password:"
+[[custom-ssh.command]]
+body = "my_password"
 ```
 
 Command's options:
