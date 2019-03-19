@@ -7,6 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/migotom/mt-bulk/internal/schema"
@@ -14,6 +15,26 @@ import (
 
 // HandlerFunc executes sequence of operations in context of service using established already connection and passed by context into handler.
 type HandlerFunc func(service Service) error
+
+// ApplicationStatus stores final execution status that should be returned to OS.
+type ApplicationStatus struct {
+	code int
+	sync.Mutex
+}
+
+// SetCode sets application status code.
+func (app *ApplicationStatus) SetCode(status int) {
+	app.Lock()
+	defer app.Unlock()
+	app.code = status
+}
+
+// Get returns application status code.
+func (app *ApplicationStatus) Get() int {
+	app.Lock()
+	defer app.Unlock()
+	return app.code
+}
 
 // Service represents common interface for all supported services.
 type Service interface {

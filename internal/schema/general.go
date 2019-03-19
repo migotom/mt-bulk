@@ -20,8 +20,8 @@ type GeneralConfig struct {
 	Service           map[string]*Service
 	ModeHandler       ModeHandlerFunc
 	DB                DBConfig
-	CustomSSHSequence CustomSequence `toml:"custom-ssh"`
-	CustomAPISequence CustomSequence `toml:"custom-api"`
+	CustomSSHSequence *CustomSequence `toml:"custom-ssh"`
+	CustomAPISequence *CustomSequence `toml:"custom-api"`
 }
 
 type Service struct {
