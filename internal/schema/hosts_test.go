@@ -62,13 +62,13 @@ func TestAdd(t *testing.T) {
 			Name:          "Invalid IP",
 			Inputs:        []string{"192,1268.8.8", "192.168.1.2"},
 			ExpectedList:  nil,
-			ExpectedError: errors.New("Hosts loader Add Can't resolve host: 192,1268.8.8"),
+			ExpectedError: errors.New("hosts loader add can't resolve host: 192,1268.8.8"),
 		},
 		{
 			Name:          "Invalid Port",
 			Inputs:        []string{"192.168.8.8:XX", "192.168.1.2"},
 			ExpectedList:  nil,
-			ExpectedError: errors.New("Hosts loader Add Port invalid format: XX"),
+			ExpectedError: errors.New("hosts loader add port invalid format: XX"),
 		},
 		{
 			Name:          "Empty",

@@ -53,7 +53,7 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	}
 
 	if _, err := os.Stat(appConfig.Certs.Directory); err != nil {
-		return nil, nil, fmt.Errorf("Missing Certificates Store directory, %s", err)
+		return nil, nil, fmt.Errorf("missing Certificates Store directory, %s", err)
 	}
 
 	if gen, _ := arguments["gen-certs"].(bool); gen {
@@ -75,7 +75,7 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	if m, _ := arguments["change-password"].(bool); m {
 		newPass, ok := arguments["--new"].(string)
 		if !ok {
-			return nil, nil, fmt.Errorf("Missing new password")
+			return nil, nil, fmt.Errorf("missing new password")
 		}
 
 		appConfig.ModeHandler = func(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {

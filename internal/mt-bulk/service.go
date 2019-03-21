@@ -68,10 +68,9 @@ func (s *Service) Start() error {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt)
 
-		select {
-		case sig := <-signals:
-			log.Printf("Interrupted by signal: %v\n", sig)
-		}
+		sig := <-signals
+		log.Printf("Interrupted by signal: %v\n", sig)
+
 		s.cancel()
 	}()
 

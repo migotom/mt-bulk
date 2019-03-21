@@ -39,13 +39,13 @@ func (h *Hosts) parseHost(oldHost Host) (Host, error) {
 	list := strings.Split(oldHost.IP, ":")
 	if len(list) > 2 {
 		// does not meet format IP:PORT
-		return Host{}, fmt.Errorf(fmt.Sprintf("Host invalid format: %s", oldHost.IP))
+		return Host{}, fmt.Errorf(fmt.Sprintf("host invalid format: %s", oldHost.IP))
 	}
 
 	if len(list) == 2 {
 		port, err := strconv.Atoi(list[1])
 		if err != nil || port < 0 || port > 65535 {
-			return Host{}, fmt.Errorf("Port invalid format: %s", list[1])
+			return Host{}, fmt.Errorf("port invalid format: %s", list[1])
 		}
 		newHost.Port = list[1]
 	}
@@ -61,7 +61,7 @@ func (h *Hosts) parseHost(oldHost Host) (Host, error) {
 		return newHost, nil
 	}
 
-	return Host{}, fmt.Errorf(fmt.Sprintf("Can't resolve host: %s", oldHost.IP))
+	return Host{}, fmt.Errorf(fmt.Sprintf("can't resolve host: %s", oldHost.IP))
 }
 
 // Get list of hosts.
@@ -78,11 +78,9 @@ func (h *Hosts) Reset() {
 func (h *Hosts) Add(loader HostsLoaderFunc) error {
 	hosts, err := loader(h.parseHost)
 	if err != nil {
-		return fmt.Errorf("Hosts loader Add %v", err)
+		return fmt.Errorf("hosts loader add %v", err)
 	}
 
-	for _, host := range hosts {
-		h.hosts = append(h.hosts, host)
-	}
+	h.hosts = append(h.hosts, hosts...)
 	return nil
 }
