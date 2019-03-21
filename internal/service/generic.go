@@ -58,10 +58,9 @@ type CopyFiler interface {
 
 // GenericDevice defines basic setup for device instance.
 type GenericDevice struct {
-	AppConfig          *schema.GeneralConfig
-	Host               schema.Host
-	currentPasswordIdx int
-	matches            map[string]string
+	AppConfig *schema.GeneralConfig
+	Host      schema.Host
+	matches   map[string]string
 }
 
 func (d *GenericDevice) SetHost(host schema.Host) {

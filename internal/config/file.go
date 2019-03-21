@@ -26,7 +26,7 @@ func getFileName(implicitConfigFileName string) (string, error) {
 	}
 
 	if fileName == "" {
-		return "", errors.New("No config file provided")
+		return "", errors.New("no config file provided")
 	}
 
 	return fileName, nil

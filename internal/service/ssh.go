@@ -124,7 +124,7 @@ func (d *SSH) CopyFile(local, remote string) error {
 	// local file
 	lf, err := os.Open(local)
 	if err != nil {
-		return fmt.Errorf("Local file %s open error %v", local, err)
+		return fmt.Errorf("local file %s open error %v", local, err)
 	}
 	defer lf.Close()
 
