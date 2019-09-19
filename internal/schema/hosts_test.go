@@ -9,31 +9,31 @@ import (
 func TestGet(t *testing.T) {
 	cases := []struct {
 		Name           string
-		Hosts          Hosts
+		Hosts          []Host
 		ExpectedResult []Host
 	}{
 		{
 			Name:           "OK",
-			Hosts:          Hosts{hosts: []Host{Host{IP: "192.168.1.1"}}},
+			Hosts:          []Host{Host{IP: "192.168.1.1"}},
 			ExpectedResult: []Host{Host{IP: "192.168.1.1"}},
 		},
 		{
 			Name:           "Empty",
-			Hosts:          Hosts{hosts: nil},
+			Hosts:          nil,
 			ExpectedResult: nil,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			if !reflect.DeepEqual(tc.Hosts.Get(), tc.ExpectedResult) {
-				t.Errorf("got:%v, expected:%v", tc.Hosts.Get(), tc.ExpectedResult)
+			if !reflect.DeepEqual(tc.Hosts, tc.ExpectedResult) {
+				t.Errorf("got:%v, expected:%v", tc.Hosts, tc.ExpectedResult)
 			}
 		})
 	}
 }
 
-func TestAdd(t *testing.T) {
+func TestHostAdding(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Inputs        []string
@@ -62,33 +62,23 @@ func TestAdd(t *testing.T) {
 			Name:          "Invalid IP",
 			Inputs:        []string{"192,1268.8.8", "192.168.1.2"},
 			ExpectedList:  nil,
-			ExpectedError: errors.New("hosts loader add can't resolve host: 192,1268.8.8"),
+			ExpectedError: errors.New("can't resolve host: 192,1268.8.8"),
 		},
 		{
 			Name:          "Invalid Port",
 			Inputs:        []string{"192.168.8.8:XX", "192.168.1.2"},
 			ExpectedList:  nil,
-			ExpectedError: errors.New("hosts loader add port invalid format: XX"),
-		},
-		{
-			Name:          "Empty",
-			Inputs:        []string{},
-			ExpectedList:  nil,
-			ExpectedError: nil,
+			ExpectedError: errors.New("port invalid format: XX"),
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			var hosts Hosts
-
-			err := hosts.Add(func(parser HostParserFunc) ([]Host, error) {
-				return ArgvLoadHosts(parser, tc.Inputs)
-			})
+			hosts, err := ArgvLoadHosts(HostParser, tc.Inputs)
 			if !reflect.DeepEqual(err, tc.ExpectedError) {
 				t.Errorf("not expected error:%v, expected:%v", err, tc.ExpectedError)
 			}
-			if !reflect.DeepEqual(hosts.Get(), tc.ExpectedList) {
-				t.Errorf("got:%v, expected:%v", hosts.Get(), tc.ExpectedList)
+			if !reflect.DeepEqual(hosts, tc.ExpectedList) {
+				t.Errorf("got:%v, expected:%v", hosts, tc.ExpectedList)
 			}
 		})
 	}

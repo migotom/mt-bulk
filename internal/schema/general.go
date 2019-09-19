@@ -24,13 +24,14 @@ type GeneralConfig struct {
 	CustomAPISequence *CustomSequence `toml:"custom-api"`
 }
 
+// Service authentication parameters.
 type Service struct {
-	DefaultPort string      `toml:"port"`
-	DefaultUser string      `toml:"user"`
-	DefaultPass string      `toml:"password"`
-	Interface   interface{} `toml:"-"`
+	DefaultPort string `toml:"port"`
+	DefaultUser string `toml:"user"`
+	DefaultPass string `toml:"password"`
 }
 
+// Certs .
 type Certs struct {
 	Directory string
 	Generate  bool

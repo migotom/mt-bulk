@@ -28,12 +28,7 @@ func (h Host) String() string {
 	return fmt.Sprintf("ID:%d IP:%s Port:%s User:%s Pass:%s", h.ID, h.IP, h.Port, h.User, h.Pass)
 }
 
-// Hosts defines list of hosts to use.
-type Hosts struct {
-	hosts []Host
-}
-
-func (h *Hosts) parseHost(oldHost Host) (Host, error) {
+func HostParser(oldHost Host) (Host, error) {
 	newHost := oldHost
 
 	list := strings.Split(oldHost.IP, ":")
@@ -62,25 +57,4 @@ func (h *Hosts) parseHost(oldHost Host) (Host, error) {
 	}
 
 	return Host{}, fmt.Errorf(fmt.Sprintf("can't resolve host: %s", oldHost.IP))
-}
-
-// Get list of hosts.
-func (h *Hosts) Get() []Host {
-	return h.hosts
-}
-
-// Reset list of hosts.
-func (h *Hosts) Reset() {
-	h.hosts = nil
-}
-
-// Add hosts using HostsLoader function.
-func (h *Hosts) Add(loader HostsLoaderFunc) error {
-	hosts, err := loader(h.parseHost)
-	if err != nil {
-		return fmt.Errorf("hosts loader add %v", err)
-	}
-
-	h.hosts = append(h.hosts, hosts...)
-	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/migotom/mt-bulk/internal/schema"
 	"github.com/migotom/mt-bulk/internal/service"
@@ -33,9 +32,7 @@ func Worker(ctx context.Context, appConfig *schema.GeneralConfig, hosts chan sch
 }
 
 // ErrorCollector collects and parde all errors produced by workers.
-func ErrorCollector(appConfig *schema.GeneralConfig, errors chan schema.Error, status *service.ApplicationStatus, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func ErrorCollector(appConfig *schema.GeneralConfig, errors chan schema.Error, status *service.ApplicationStatus) {
 	hostsErrors := make(map[schema.Host][]string)
 	for error := range errors {
 		hostsErrors[error.Host] = append(hostsErrors[error.Host], error.Message)

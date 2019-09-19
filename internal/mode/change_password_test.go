@@ -11,14 +11,11 @@ import (
 
 func TestChangePassword(t *testing.T) {
 	MTAPI := mocks.Service{}
-
 	appConfig := schema.GeneralConfig{}
 	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["mikrotik_api"] = &schema.Service{
-		Interface: &MTAPI,
-	}
+	appConfig.Service["mikrotik_api"] = &schema.Service{}
 
-	if err := ChangePassword(context.Background(), &appConfig, schema.Host{}, "new_pass"); err != nil {
+	if err := ChangePassword(context.Background(), MTAPI.GetService, &appConfig, schema.Host{}, "new_pass"); err != nil {
 		t.Errorf("not expected error %v", err)
 	}
 	if !reflect.DeepEqual(MTAPI.CommandsExecuted, []string{"/user/set =numbers=admin =password=new_pass"}) {

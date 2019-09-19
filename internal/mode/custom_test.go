@@ -20,11 +20,9 @@ func TestCustomAPI(t *testing.T) {
 		},
 	}
 	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["mikrotik_api"] = &schema.Service{
-		Interface: &MTAPI,
-	}
+	appConfig.Service["mikrotik_api"] = &schema.Service{}
 
-	if err := CustomAPI(context.Background(), &appConfig, schema.Host{}); err != nil {
+	if err := CustomAPI(context.Background(), MTAPI.GetService, &appConfig, schema.Host{}); err != nil {
 		t.Errorf("not expected error %v", err)
 	}
 	if !reflect.DeepEqual(MTAPI.CommandsExecuted, []string{"/user/print"}) {
@@ -43,11 +41,9 @@ func TestCustomSSH(t *testing.T) {
 		},
 	}
 	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["ssh"] = &schema.Service{
-		Interface: &SSHAPI,
-	}
+	appConfig.Service["ssh"] = &schema.Service{}
 
-	if err := CustomSSH(context.Background(), &appConfig, schema.Host{}); err != nil {
+	if err := CustomSSH(context.Background(), SSHAPI.GetService, &appConfig, schema.Host{}); err != nil {
 		t.Errorf("not expected error %v", err)
 	}
 	if !reflect.DeepEqual(SSHAPI.CommandsExecuted, []string{"/user print"}) {

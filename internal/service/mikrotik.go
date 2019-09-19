@@ -10,10 +10,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/migotom/mt-bulk/internal/schema"
 	"github.com/migotom/routeros"
 )
 
 const portAPI = "8729"
+
+func NewMTAPIService(config *schema.GeneralConfig, host schema.Host) Service {
+	return &MTAPI{
+		GenericDevice: GenericDevice{
+			AppConfig: config,
+			Host:      host,
+		},
+	}
+}
 
 // MTAPI defines Mikrotik secure API service by extending generic device with Routeros connection.
 type MTAPI struct {

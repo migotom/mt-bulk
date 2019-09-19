@@ -8,10 +8,8 @@ import (
 )
 
 // CustomAPI executes custom sequence of commands using Mikrotik SSL API.
-func CustomAPI(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
-	mt := config.Service["mikrotik_api"].Interface.(service.Service)
-	mt.SetConfig(config)
-	mt.SetHost(host)
+func CustomAPI(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
+	mt := newService(config, host)
 
 	return mt.HandleSequence(ctx, func(payloadService service.Service) error {
 		return service.ExecuteCommands(ctx, payloadService, config.CustomAPISequence.Command)
@@ -20,10 +18,8 @@ func CustomAPI(ctx context.Context, config *schema.GeneralConfig, host schema.Ho
 }
 
 // CustomSSH executes custom sequence of commands using SSH protocol.
-func CustomSSH(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
-	ssh := config.Service["ssh"].Interface.(service.Service)
-	ssh.SetConfig(config)
-	ssh.SetHost(host)
+func CustomSSH(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
+	ssh := newService(config, host)
 
 	return ssh.HandleSequence(ctx, func(payloadService service.Service) error {
 		return service.ExecuteCommands(ctx, payloadService, config.CustomSSHSequence.Command)

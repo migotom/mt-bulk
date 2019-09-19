@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/migotom/mt-bulk/internal/schema"
-	"github.com/migotom/mt-bulk/internal/service/mocks"
 )
 
 func TestWorker(t *testing.T) {
@@ -55,12 +54,10 @@ func TestWorker(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			Service := mocks.Service{}
+			//Service := mocks.Service{}
 			appConfig := schema.GeneralConfig{ModeHandler: tc.Handler, IgnoreErrors: true}
 			appConfig.Service = make(map[string]*schema.Service)
-			appConfig.Service["ssh"] = &schema.Service{
-				Interface: &Service,
-			}
+			appConfig.Service["ssh"] = &schema.Service{}
 
 			ctx, cancel := context.WithCancel(context.Background())
 
@@ -69,8 +66,10 @@ func TestWorker(t *testing.T) {
 			resultsChan := make(chan schema.Error)
 
 			wg.Add(1)
-			go Worker(ctx, &appConfig, hostsChan, resultsChan, wg)
-
+			go func() {
+				defer wg.Done()
+				Worker(ctx, &appConfig, hostsChan, resultsChan)
+			}()
 			for _, host := range tc.Hosts {
 				hostsChan <- host
 			}

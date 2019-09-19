@@ -14,11 +14,9 @@ func TestInitSecureAPIHandler(t *testing.T) {
 
 	appConfig := schema.GeneralConfig{}
 	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["ssh"] = &schema.Service{
-		Interface: &MTAPI,
-	}
+	appConfig.Service["ssh"] = &schema.Service{}
 
-	if err := InitSecureAPIHandler(context.Background(), &appConfig, schema.Host{}); err != nil {
+	if err := InitSecureAPIHandler(context.Background(), MTAPI.GetService, &appConfig, schema.Host{}); err != nil {
 		t.Errorf("not expected error %v", err)
 	}
 	if !reflect.DeepEqual(MTAPI.CommandsExecuted, []string{

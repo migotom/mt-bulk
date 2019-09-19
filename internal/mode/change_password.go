@@ -8,10 +8,8 @@ import (
 )
 
 // ChangePassword mode changes device's admin password.
-func ChangePassword(ctx context.Context, config *schema.GeneralConfig, host schema.Host, newPass string) error {
-	mt := config.Service["mikrotik_api"].Interface.(service.Service)
-	mt.SetConfig(config)
-	mt.SetHost(host)
+func ChangePassword(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host, newPass string) error {
+	mt := newService(config, host)
 
 	return mt.HandleSequence(ctx, func(payloadService service.Service) error {
 		cmds := []schema.Command{
