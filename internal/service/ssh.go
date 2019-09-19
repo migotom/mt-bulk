@@ -107,36 +107,54 @@ func (d *SSH) HandleSequence(ctx context.Context, handler HandlerFunc) (err erro
 }
 
 // CopyFile copies file over SFTP.
-func (d *SSH) CopyFile(local, remote string) error {
-	client, err := sftp.NewClient(d.sshClient)
-	if err != nil {
-		return fmt.Errorf("SFTP client creating error error %v", err)
+func (d *SSH) CopyFile(ctx context.Context, local, remote string) error {
+	done := make(chan error)
+	defer close(done)
+
+	go func(done chan<- error) {
+		client, err := sftp.NewClient(d.sshClient)
+		if err != nil {
+			done <- fmt.Errorf("SFTP client creating error error %v", err)
+		}
+		defer client.Close()
+
+		// file on remote device
+		rf, err := client.OpenFile(remote, os.O_CREATE|os.O_WRONLY)
+		if err != nil {
+			done <- fmt.Errorf("SFTP remote file %s error %v", remote, err)
+		}
+		defer rf.Close()
+
+		// local file
+		lf, err := os.Open(local)
+		if err != nil {
+			done <- fmt.Errorf("local file %s open error %v", local, err)
+		}
+		defer lf.Close()
+
+		io.Copy(rf, lf)
+
+		log.Printf("[IP:%s][SFTP] %s copied to %s\n", d.GenericDevice.Host.IP, local, remote)
+		done <- nil
+	}(done)
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("Context cancelled")
+	case <-time.After(30 * time.Second):
+		return fmt.Errorf("CopyFile timeouted")
+	case e := <-done:
+		return e
 	}
-	defer client.Close()
-
-	// file on remote device
-	rf, err := client.OpenFile(remote, os.O_CREATE|os.O_WRONLY)
-	if err != nil {
-		return fmt.Errorf("SFTP remote file %s error %v", remote, err)
-	}
-	defer rf.Close()
-
-	// local file
-	lf, err := os.Open(local)
-	if err != nil {
-		return fmt.Errorf("local file %s open error %v", local, err)
-	}
-	defer lf.Close()
-
-	io.Copy(rf, lf)
-
-	log.Printf("[IP:%s][SFTP] %s copied to %s\n", d.GenericDevice.Host.IP, local, remote)
-	return nil
 }
 
 // Close used session
 func (d *SSH) Close() error {
 	defer d.session.Close()
+	defer func() {
+		d.session = nil
+	}()
+
 	d.stdinBuf.Write([]byte("/quit\r"))
 
 	if err := d.session.Wait(); err != nil {
