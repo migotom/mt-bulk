@@ -86,6 +86,9 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	if m, _ := arguments["custom-ssh"].(bool); m {
 		appConfig.ModeHandler = mode.CustomSSH
 
+		if appConfig.CustomSSHSequence == nil {
+			return nil, nil, fmt.Errorf("missing custom-ssh.command sequence in configuration")
+		}
 		appConfig.CustomSSHSequence.Command = nil
 		if f, ok := arguments["--commands-file"].(string); ok {
 			if err := config.LoadConfigFile(appConfig.CustomSSHSequence, f); err != nil {
@@ -96,6 +99,9 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	if m, _ := arguments["custom-api"].(bool); m {
 		appConfig.ModeHandler = mode.CustomAPI
 
+		if appConfig.CustomAPISequence == nil {
+			return nil, nil, fmt.Errorf("missing custom-api.command sequence in configuration")
+		}
 		appConfig.CustomAPISequence.Command = nil
 		if f, ok := arguments["--commands-file"].(string); ok {
 			if err := config.LoadConfigFile(appConfig.CustomAPISequence, f); err != nil {
