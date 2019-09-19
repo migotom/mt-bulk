@@ -5,6 +5,7 @@
 *.so
 *.dylib
 .DS_Store
+vendor/
 
 # Test binary, build with `go test -c`
 mt-bulk.cfg
