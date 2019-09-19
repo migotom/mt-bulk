@@ -24,7 +24,6 @@ type Service struct {
 	hostsChannel   chan schema.Host
 	resultsChannel chan schema.Error
 
-	wgWorkers   sync.WaitGroup
 	wgCollector sync.WaitGroup
 	cancel      context.CancelFunc
 }
@@ -43,15 +42,17 @@ func NewService(appConfig *schema.GeneralConfig, hostsLoaderFuncs []schema.Hosts
 	}
 }
 
-// Start service, run workers and prepare self to gracefull exit if needed.
-func (s *Service) Start() error {
+// Run service, run workers and prepare self to gracefull exit if needed.
+func (s *Service) Run() int {
 	var ctx context.Context
 	ctx, s.cancel = context.WithCancel(context.Background())
 
+	wg := new(sync.WaitGroup)
+
+	wg.Add(1)
 	// check app version
-	s.wgWorkers.Add(1)
 	go func() {
-		defer s.wgWorkers.Done()
+		defer wg.Done()
 
 		if s.appConfig.SkipVersionCheck {
 			return
@@ -82,22 +83,19 @@ func (s *Service) Start() error {
 	go mode.ErrorCollector(s.appConfig, s.resultsChannel, &s.Status, &s.wgCollector)
 
 	for i := 1; i <= s.appConfig.Workers; i++ {
-		s.wgWorkers.Add(1)
-		go mode.Worker(ctx, s.appConfig, s.hostsChannel, s.resultsChannel, &s.wgWorkers)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mode.Worker(ctx, s.appConfig, s.hostsChannel, s.resultsChannel)
+		}()
 	}
 
 	for _, host := range s.hosts.Get() {
 		s.hostsChannel <- host
 	}
-	return nil
-}
-
-// Close service.
-func (s *Service) Close() int {
-	defer s.cancel()
 
 	close(s.hostsChannel)
-	s.wgWorkers.Wait()
+	wg.Wait()
 
 	close(s.resultsChannel)
 	s.wgCollector.Wait()

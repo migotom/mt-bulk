@@ -17,7 +17,7 @@ type Service struct {
 	Host      schema.Host
 }
 
-func (t *Service) CopyFile(local, remote string) error {
+func (t *Service) CopyFile(ctx context.Context, local, remote string) error {
 	t.FilesCopied = append(t.FilesCopied, remote)
 	return nil
 }

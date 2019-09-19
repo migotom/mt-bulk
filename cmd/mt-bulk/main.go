@@ -45,6 +45,5 @@ func main() {
 	}
 
 	service := mtbulk.NewService(&appConfig, hostsLoaders)
-	service.Start()
-	os.Exit(service.Close())
+	os.Exit(service.Run())
 }

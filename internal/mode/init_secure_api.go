@@ -24,10 +24,10 @@ func InitSecureAPIHandler(ctx context.Context, config *schema.GeneralConfig, hos
 		// TODO refactor required for better graceful shutdown while SFTP operation in progress
 
 		// copy certificate to device
-		if err := d.CopyFile(filepath.Join(config.Certs.Directory, "device.crt"), "mtbulkdevice.crt"); err != nil {
+		if err := d.CopyFile(ctx, filepath.Join(config.Certs.Directory, "device.crt"), "mtbulkdevice.crt"); err != nil {
 			return fmt.Errorf("file copy error %v", err)
 		}
-		if err := d.CopyFile(filepath.Join(config.Certs.Directory, "device.key"), "mtbulkdevice.key"); err != nil {
+		if err := d.CopyFile(ctx, filepath.Join(config.Certs.Directory, "device.key"), "mtbulkdevice.key"); err != nil {
 			return fmt.Errorf("file copy error %v", err)
 		}
 

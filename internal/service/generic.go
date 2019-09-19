@@ -53,7 +53,7 @@ type Service interface {
 }
 
 type CopyFiler interface {
-	CopyFile(local, remote string) error
+	CopyFile(ctx context.Context, local, remote string) error
 }
 
 // GenericDevice defines basic setup for device instance.
@@ -119,45 +119,61 @@ func (d *GenericDevice) expect(reader io.Reader, expect *regexp.Regexp) (result 
 func ExecuteCommands(ctx context.Context, d Service, commands []schema.Command) (err error) {
 	dev := d.GetDevice()
 
+	run := func(c schema.Command, done chan<- error) {
+		defer close(done)
+
+		for match, value := range dev.matches {
+			fmt.Printf("checking match:%s (replace with value %s)\n", match, value)
+			c.Body = regexp.MustCompile(match).ReplaceAllString(c.Body, value)
+		}
+
+		if dev.AppConfig.Verbose {
+			log.Printf("[IP:%s] < %s\n", dev.Host.IP, c.Body)
+		}
+
+		var expect *regexp.Regexp
+		if c.Expect != "" {
+			expect = regexp.MustCompile(c.Expect)
+		}
+
+		if c.Result, err = d.RunCmd(c.Body, expect); err != nil {
+			done <- fmt.Errorf("command processing error: %s", err)
+			return
+		}
+
+		if dev.AppConfig.Verbose {
+			log.Printf("[IP:%s] > %s\n", dev.Host.IP, c.Result)
+		}
+
+		if c.Sleep.Duration > 0 {
+			log.Printf("[IP:%s] (sleep %s)\n", dev.Host.IP, c.Sleep.Duration)
+			time.Sleep(c.Sleep.Duration)
+		}
+
+		if matches := regexp.MustCompile(c.Match).FindStringSubmatch(c.Result); len(matches) > 1 {
+			for i := 1; i < len(matches); i++ {
+				dev.matches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i)] = matches[i]
+				fmt.Printf("found: key:%s value:%v\n", fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i), matches[i])
+			}
+		}
+		done <- nil
+	}
+
 	for _, c := range commands {
+		done := make(chan error)
+		go run(c, done)
+
 		select {
 		case <-ctx.Done():
 			return nil
-		default:
-			for match, value := range dev.matches {
-				fmt.Printf("checking match:%s (replace with value %s)\n", match, value)
-				c.Body = regexp.MustCompile(match).ReplaceAllString(c.Body, value)
-			}
-
-			if dev.AppConfig.Verbose {
-				log.Printf("[IP:%s] < %s\n", dev.Host.IP, c.Body)
-			}
-
-			var expect *regexp.Regexp
-			if c.Expect != "" {
-				expect = regexp.MustCompile(c.Expect)
-			}
-
-			if c.Result, err = d.RunCmd(c.Body, expect); err != nil {
-				return fmt.Errorf("command processing error: %s", err)
-			}
-
-			if dev.AppConfig.Verbose {
-				log.Printf("[IP:%s] > %s\n", dev.Host.IP, c.Result)
-			}
-
-			if c.Sleep.Duration > 0 {
-				log.Printf("[IP:%s] (sleep %s)\n", dev.Host.IP, c.Sleep.Duration)
-				time.Sleep(c.Sleep.Duration)
-			}
-
-			if matches := regexp.MustCompile(c.Match).FindStringSubmatch(c.Result); len(matches) > 1 {
-				for i := 1; i < len(matches); i++ {
-					dev.matches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i)] = matches[i]
-					fmt.Printf("found: key:%s value:%v\n", fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i), matches[i])
-				}
+		case <-time.After(30 * time.Second):
+			return fmt.Errorf("ExecuteCommands timeouted")
+		case err := <-done:
+			if err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }

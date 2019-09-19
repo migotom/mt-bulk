@@ -11,8 +11,7 @@ import (
 )
 
 // Worker grabs devices to handle with configured handler from hosts channel.
-func Worker(ctx context.Context, appConfig *schema.GeneralConfig, hosts chan schema.Host, errors chan schema.Error, wg *sync.WaitGroup) {
-	defer wg.Done()
+func Worker(ctx context.Context, appConfig *schema.GeneralConfig, hosts chan schema.Host, errors chan schema.Error) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -30,7 +29,6 @@ func Worker(ctx context.Context, appConfig *schema.GeneralConfig, hosts chan sch
 				}
 			}
 		}
-
 	}
 }
 
