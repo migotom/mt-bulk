@@ -13,6 +13,9 @@ import (
 	"github.com/migotom/mt-bulk/internal/schema"
 )
 
+// NewServiceFunc creates new service for handle given host and configuration.
+type NewServiceFunc func(config *schema.GeneralConfig, host schema.Host) Service
+
 // HandlerFunc executes sequence of operations in context of service using established already connection and passed by context into handler.
 type HandlerFunc func(service Service) error
 

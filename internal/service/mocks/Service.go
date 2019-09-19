@@ -8,6 +8,10 @@ import (
 	"github.com/migotom/mt-bulk/internal/service"
 )
 
+// func NewSSHService(config *schema.GeneralConfig, host schema.Host) interface{} {
+// 	return SSHService{}
+// }
+
 // Service mocked.
 type Service struct {
 	CommandsExecuted []string
@@ -15,6 +19,12 @@ type Service struct {
 
 	AppConfig *schema.GeneralConfig
 	Host      schema.Host
+}
+
+func (t *Service) GetService(config *schema.GeneralConfig, host schema.Host) service.Service {
+	t.AppConfig = config
+	t.Host = host
+	return t
 }
 
 func (t *Service) CopyFile(ctx context.Context, local, remote string) error {

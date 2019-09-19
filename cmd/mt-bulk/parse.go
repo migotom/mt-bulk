@@ -70,7 +70,9 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 	}
 
 	if m, _ := arguments["init-secure-api"].(bool); m {
-		appConfig.ModeHandler = mode.InitSecureAPIHandler
+		appConfig.ModeHandler = func(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
+			return mode.InitSecureAPIHandler(ctx, service.NewSSHService, config, host)
+		}
 	}
 	if m, _ := arguments["change-password"].(bool); m {
 		newPass, ok := arguments["--new"].(string)
@@ -79,12 +81,14 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 		}
 
 		appConfig.ModeHandler = func(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
-			return mode.ChangePassword(ctx, config, host, newPass)
+			return mode.ChangePassword(ctx, service.NewMTAPIService, config, host, newPass)
 		}
 	}
 
 	if m, _ := arguments["custom-ssh"].(bool); m {
-		appConfig.ModeHandler = mode.CustomSSH
+		appConfig.ModeHandler = func(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
+			return mode.CustomSSH(ctx, service.NewSSHService, config, host)
+		}
 
 		if appConfig.CustomSSHSequence == nil {
 			return nil, nil, fmt.Errorf("missing custom-ssh.command sequence in configuration")
@@ -97,8 +101,9 @@ func configParser(arguments map[string]interface{}, appConfig *schema.GeneralCon
 		}
 	}
 	if m, _ := arguments["custom-api"].(bool); m {
-		appConfig.ModeHandler = mode.CustomAPI
-
+		appConfig.ModeHandler = func(ctx context.Context, config *schema.GeneralConfig, host schema.Host) error {
+			return mode.CustomAPI(ctx, service.NewMTAPIService, config, host)
+		}
 		if appConfig.CustomAPISequence == nil {
 			return nil, nil, fmt.Errorf("missing custom-api.command sequence in configuration")
 		}

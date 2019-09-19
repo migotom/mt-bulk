@@ -10,11 +10,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/migotom/mt-bulk/internal/schema"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
 const portSSH = "22"
+
+func NewSSHService(config *schema.GeneralConfig, host schema.Host) Service {
+	return &SSH{
+		GenericDevice: GenericDevice{
+			AppConfig: config,
+			Host:      host,
+		},
+	}
+}
 
 // SSH defines SSH service by extending generic device with ssh specific client connection details.
 type SSH struct {

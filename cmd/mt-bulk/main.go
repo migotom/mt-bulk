@@ -44,6 +44,6 @@ func main() {
 		log.Fatalf("[Fatal error] Config parser: %s\n", err)
 	}
 
-	service := mtbulk.NewService(&appConfig, hostsLoaders)
-	os.Exit(service.Run())
+	mtbulk := mtbulk.NewMTBulk(&appConfig, hostsLoaders)
+	os.Exit(mtbulk.Run())
 }
