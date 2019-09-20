@@ -31,7 +31,7 @@ Options:
   --source-file=<file-in>  Load hosts from file <file-in>
 `
 
-const version = "1.6.1"
+const version = "1.6.2"
 
 func main() {
 	arguments, _ := docopt.ParseArgs(usage, os.Args[1:], version)
