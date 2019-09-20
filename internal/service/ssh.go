@@ -15,8 +15,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const portSSH = "22"
-
 func NewSSHService(config *schema.GeneralConfig, host schema.Host) Service {
 	return &SSH{
 		GenericDevice: GenericDevice{
@@ -60,13 +58,14 @@ func (d *SSH) GetPort() string {
 	if d.Host.Port != "" {
 		return d.Host.Port
 	}
-	return portSSH
+	return d.AppConfig.Service["ssh"].DefaultPort
 }
 
 func (d *SSH) getConfig(password string) *ssh.ClientConfig {
 	var sshconfig ssh.Config
 	sshconfig.SetDefaults()
-	sshconfig.Ciphers = append(sshconfig.Ciphers, "aes128-cbc", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc")
+	sshconfig.Ciphers = append(sshconfig.Ciphers, "aes128-cbc", "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc", "diffie-hellman-group-exchange-sha256")
+	sshconfig.KeyExchanges = append(sshconfig.KeyExchanges, "diffie-hellman-group-exchange-sha256")
 
 	return &ssh.ClientConfig{
 		Config:  sshconfig,
@@ -106,9 +105,8 @@ func (d *SSH) HandleSequence(ctx context.Context, handler HandlerFunc) (err erro
 	if d.sshClient == nil {
 		return fmt.Errorf("SSH no correct passwords found")
 	}
-
-	defer d.sshClient.Close()
 	defer d.Close()
+	defer d.sshClient.Close()
 
 	d.matches = make(map[string]string)
 
@@ -160,8 +158,12 @@ func (d *SSH) CopyFile(ctx context.Context, local, remote string) error {
 
 // Close used session
 func (d *SSH) Close() error {
-	defer d.session.Close()
+	if d.session == nil {
+		return nil
+	}
+
 	defer func() {
+		d.session.Close()
 		d.session = nil
 	}()
 
