@@ -34,7 +34,7 @@ Options:
 
 ## Download
 
-Current and historical releases of MT-Bulk https://github.com/migotom/mt-bulk/releases
+Current and historical releases of MT-bulk https://github.com/migotom/mt-bulk/releases
 
 ## Examples
 
@@ -77,11 +77,11 @@ user = "admin"
 ### gen-certs
 
 Generate and store device and host certificates required to establish secure connection using Mikrotik API. As default certificates are stored in certs/ folder. 
-This operation may be proceeded once, mt-bulk will use certificates from certs/ to handle connections with each device.
+This operation may be proceeded once, MT-bulk will use certificates from certs/ to handle connections with each device.
 
 ### init-secure-api
 
-Initialize Mikrotik device to use secure API with mt-bulk. Operation uploads to device certificate and enables api-ssl with given certificate.
+Initialize Mikrotik device to use secure API with MT-bulk. Operation uploads to device certificate and enables api-ssl with given certificate.
 
 ### change-password
 
@@ -122,7 +122,7 @@ Command's options:
 - sleep: wait given time duration after executing command, required by some commands (e.g. `/system upgrade refresh`)
 - expect: regexp used to verify that command's response match expected value
 - match: regexp used to search value in command's output, using Go syntax https://github.com/google/re2/wiki/Syntax 
-- match_prefix: for each match mt-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
+- match_prefix: for each match MT-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
 
 More examples at `mt-bulk.example.cfg` and `example-commands\` folder.
 
@@ -139,7 +139,25 @@ Configuration file is written in TOML format (https://github.com/toml-lang/toml)
 - Home (~/.mt-bulk.cfg, ~/Library/Application Support/Uping/config.cfg)
 - Command line -C option
 
-### Credits
+### Hosts
+
+Host can be specified using format:
+- <ip>
+- <ip>:<port>
+
+This rule applies to hosts loaded using `--source-file` or provided directly by `[<hosts>...]`
+
+## Troubleshooting
+
+### SSH connections issues
+
+- Verify host with running MT-bulk have access to Mikrotik device
+- Verify username, password, host and port are valid, double check using eg. OpenSSH (MT-bulk doesn't require any additional tools or libraries, uses builtin in runtime SSH implementation)
+- Some older RouterOS allows old and unsecure ciphers, SSH implementation builtinto MT-bulk will not establish connection using such ciphers, please upgrade your Mikrotik/RouterOS device
+- Use strong-crypto by setting `/ip ssh set strong-crypto=yes` on RouterOS
+- If nothing helps please provide log of establishing connection using ssh command `ssh -vvv <user>@<ip>:<port>` 
+
+## Credits
 
 Application was developed by Tomasz Kolaj and is licensed under Apache License Version 2.0.
 Please reports bugs at https://github.com/migotom/mt-bulk/issues.
