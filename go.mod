@@ -9,6 +9,7 @@ require (
 	github.com/pkg/sftp v1.10.1
 	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
 	golang.org/x/sys v0.0.0-20191009170203-06d7bd2c5f4f // indirect
+	gopkg.in/yaml.v2 v2.2.4
 )
 
 go 1.13

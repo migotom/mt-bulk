@@ -8,20 +8,20 @@ type Clients struct {
 
 // Config of client.
 type Config struct {
-	VerifySleepMs int    `toml:"verify_check_sleep_ms"`
-	Retries       int    `toml:"retries_count"`
-	KeyStore     string `toml:"keys_store"`
-	Pty           Pty    `toml:"pty"`
+	VerifySleepMs int    `toml:"verify_check_sleep_ms" yaml:"verify_check_sleep_ms"`
+	Retries       int    `toml:"retries" yaml:"retries"`
+	KeyStore      string `toml:"keys_store" yaml:"keys_store"`
+	Pty           Pty    `toml:"pty" yaml:"pty"`
 
-	DefaultPort     string `toml:"port"`
-	DefaultUser     string `toml:"user"`
-	DefaultPassword string `toml:"password"`
+	DefaultPort     string `toml:"port" yaml:"port"`
+	DefaultUser     string `toml:"user" yaml:"user"`
+	DefaultPassword string `toml:"password" yaml:"password"`
 }
 
 // Pty definition for SSH.
 type Pty struct {
-	Widht  int `toml:"width"`
-	Height int `toml:"height"`
+	Widht  int `toml:"width" yaml:"width"`
+	Height int `toml:"height" yaml:"height"`
 }
 
 // NewConfig returns default config.

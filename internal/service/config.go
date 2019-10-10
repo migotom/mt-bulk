@@ -14,9 +14,9 @@ func NewConfig(version string) Config {
 
 // Config is service configuration.
 type Config struct {
-	Version          string `toml:"-"`
-	SkipVersionCheck bool   `toml:"skip_version_check"`
-	Workers          int    `toml:"workers"`
+	Version          string `toml:"-" yaml:"-"`
+	SkipVersionCheck bool   `toml:"skip_version_check" yaml:"skip_version_check"`
+	Workers          int    `toml:"workers" yaml:"workers"`
 
-	Clients clients.Clients `toml:"clients"`
+	Clients clients.Clients `toml:"clients" yaml:"clients"`
 }

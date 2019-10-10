@@ -10,11 +10,11 @@ type JobsLoaderFunc func(context.Context, Job) ([]Job, error)
 
 // Job represents single job request.
 type Job struct {
-	Host     Host
-	Kind     string
-	Commands []Command
-	Data     map[string]string
-	Result   chan Result
+	Host     Host              `toml:"host" yaml:"host"`
+	Kind     string            `toml:"kind" yaml:"kind"`
+	Commands []Command         `toml:"commands" yaml:"commands"`
+	Data     map[string]string `toml:"data"  yaml:"data"`
+	Result   chan Result       `toml:"result" yaml:"result"`
 }
 
 func (j Job) String() string {

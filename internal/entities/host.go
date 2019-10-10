@@ -10,10 +10,10 @@ import (
 // Host represents single host instance with all data and credentials required to connect to.
 type Host struct {
 	ID       string
-	IP       string
-	Port     string
-	User     string
-	Password string
+	IP       string `toml:"ip" yaml:"ip"`
+	Port     string `toml:"port" yaml:"port"`
+	User     string `toml:"user" yaml:"user"`
+	Password string `toml:"password" yaml:"password"`
 }
 
 // GetPasswords returns list of available passwords.

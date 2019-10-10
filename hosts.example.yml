@@ -1,0 +1,8 @@
+host:
+  - ip: "192.168.1.1"
+    password: "secret"
+  - ip: "192.168.1.2:22"
+    user: "john"
+    password: "secret"
+  - ip: "192.168.1.3"
+    port: "22"

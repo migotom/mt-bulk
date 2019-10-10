@@ -10,15 +10,15 @@ import (
 type Config struct {
 	Version     int  `toml:"version"`
 	Verbose     bool `toml:"verbose"`
-	SkipSummary bool `toml:"skip_summary"`
+	SkipSummary bool `toml:"skip_summary" yaml:"skip_summary"`
 
-	Service           service.Config
-	DB                driver.DBConfig
-	CustomSSHSequence *CustomSequence `toml:"custom-ssh"`
-	CustomAPISequence *CustomSequence `toml:"custom-api"`
+	Service           service.Config  `toml:"service" yaml:"service"`
+	DB                driver.DBConfig `toml:"db" yaml:"db"`
+	CustomSSHSequence *CustomSequence `toml:"custom-ssh" yaml:"custom-ssh"`
+	CustomAPISequence *CustomSequence `toml:"custom-api" yaml:"custom-api"`
 }
 
 // CustomSequence is sequence of custom commands.
 type CustomSequence struct {
-	Command []entities.Command
+	Command []entities.Command `toml:"command" yaml:"command"`
 }

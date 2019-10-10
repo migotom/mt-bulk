@@ -2,32 +2,59 @@ package driver
 
 import (
 	"bufio"
+	"bytes"
 	"context"
-	"os"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 
+	"gopkg.in/yaml.v2"
+
+	"github.com/BurntSushi/toml"
 	"github.com/migotom/mt-bulk/internal/entities"
 )
 
 // FileLoadJobs loads list of jobs from file.
 func FileLoadJobs(ctx context.Context, jobTemplate entities.Job, filename string) (jobs []entities.Job, err error) {
-	file, err := os.Open(filename)
+	var hosts struct {
+		Host []entities.Host
+	}
+
+	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".toml":
+		err = toml.Unmarshal(content, &hosts)
+		if err != nil {
+			return nil, err
+		}
+	case ".yml", ".yaml":
+		err = yaml.Unmarshal(content, &hosts)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		reader := bytes.NewReader(content)
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			hosts.Host = append(hosts.Host, entities.Host{IP: scanner.Text()})
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, host := range hosts.Host {
 		job := jobTemplate
-		job.Host = entities.Host{IP: scanner.Text()}
+		job.Host = host
 		if err := job.Host.Parse(); err != nil {
 			return nil, err
 		}
 
 		jobs = append(jobs, job)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
 	}
 
 	return jobs, nil
