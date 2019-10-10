@@ -1,6 +1,8 @@
 # mt-bulk
 
-MT-bulk asynchronously and parallel sends using Mikrotik SSL API or SSH defined commands to list of devices provided by command line, loaded from file or database.
+MT-bulk asynchronously and parallel sends defined commands or jobs using Mikrotik SSL API or SSH to list of devices provided by command line, loaded from file or database.
+
+Version 2.x introduces a major breaking changes, please read [Version 2 breaking changes](#Version-2-breaking-changes) section of this readme before upgrading.
 
 ## Options
 
@@ -8,24 +10,18 @@ MT-bulk asynchronously and parallel sends using Mikrotik SSL API or SSH defined 
 MT-bulk.
 
 Usage:
-  mt-bulk gen-certs [options]
+  mt-bulk gen-api-certs [options]
+  mt-bulk gen-ssh-keys [options]
   mt-bulk init-secure-api [options] [<hosts>...]
-  mt-bulk change-password (--new=<newpass>) [options] [<hosts>...]  
+  mt-bulk init-publickey-ssh [options] [<hosts>...]
+  mt-bulk change-password (--new=<newpass>) [--user=<login>] [options] [<hosts>...]  
   mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk -h | --help
   mt-bulk --version
 
 Options:
-  -C <config-file>         Use configuration file, e.g. certs locations, ports, commands sequences, custom commands, etc...
-
-  -s                       Be quiet and don't print commands and commands results to standard output
-  -w <workers>             Number of parallel connections to run (default: 4)
-
-  --skip-version-check     Skip checking for new version
-  --skip-summary           Skip errors summary
-  --exit-on-error          In case of any error stop executing commands
-
+  -C <config-file>         Use configuration file, e.g. keys/certs locations, ports, commands sequences, custom commands, etc...
   --source-db              Load hosts using database configured by -C <config-file>
   --source-file=<file-in>  Load hosts from file <file-in>
 
@@ -39,19 +35,19 @@ Current and historical releases of MT-bulk https://github.com/migotom/mt-bulk/re
 ## Examples
 
 ```
-mt-bulk gen-certs -C mtbulk.cfg
+mt-bulk gen-api-certs -C mtbulk.cfg
 ```
 Create new CA, host and device certificates.
 
 ```
 mt-bulk init-secure-api -C mtbulk.cfg 192.168.1.2 192.168.1.3:222 192.168.1.4:6654
 ```
-Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (each device has running SSH on different port) with SSL API and certificates pointed by mtbulk.cfg (section [certificates_store]).
+Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (in this example each device has running SSH on different port) with user, SSL API and certificates pointed by mtbulk.cfg (section [service.clients.mikrotik_api.keys_store]).
 
 ```
-mt-bulk change-password -w 16 -C mtbulk.cfg --new=supersecret --source-db
+mt-bulk change-password -w 16 -C mtbulk.cfg --new=supersecret --user=admin --source-db
 ```
-Change password to *supersecret* on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
+Change admin's password to *supersecret* on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
 
 
 ## Operations
@@ -63,29 +59,39 @@ Syntax:
 mt-bulk <operation-name> [additional parameters]
 ```
 
-MT-bulk while connecting to devices is using list of passwords provided in configuration file, sections: [service.ssh] and [service.mikrotik_api], passwords are comma separated.
+MT-bulk while connecting to devices is using SSH public key or list of passwords provided in configuration file, sections: [service.clients.ssh] and [service.clients.mikrotik_api], passwords are comma separated.
 
 e.g.
 ```
 [service]
-[service.ssh]
+[service.clients.ssh]
 port = "22"
 password = "most_common_secret,alternative_secret,old_secret"
 user = "admin"
+keys_store  = "keys/ssh"
 ```
 
-### gen-certs
+### gen-api-certs
 
-Generate and store device and host certificates required to establish secure connection using Mikrotik API. As default certificates are stored in certs/ folder. 
-This operation may be proceeded once, MT-bulk will use certificates from certs/ to handle connections with each device.
+Generate and store device and host certificates required to establish secure connection using Mikrotik API. 
+This operation may be proceeded once, MT-bulk will use certificates from [service.clients.mikrotik_api.keys_store] to handle connections with each device.
+
+### gen-ssh-keys
+
+Generate and store private and public SSH RSA keys that may be used to establish secure connection using SSH without password. 
+This operation may be proceeded once, MT-bulk will use keys from [service.clients.ssh.keys_store] to handle connections with each device.
 
 ### init-secure-api
 
-Initialize Mikrotik device to use secure API with MT-bulk. Operation uploads to device certificate and enables api-ssl with given certificate.
+Initialize Mikrotik device to use SSL API with MT-bulk. Operation uploads to device certificate and enables api-ssl with given certificate.
+
+### init-publickey-ssh
+
+Initialize Mikrotik device to use SSH public key to authenticate with MT-bulk. Operation uploads to device public key and enables it for given user.
 
 ### change-password
 
-Change password to given new one with option `--new=<newpass>`
+Change password to given new one with option `--new=<newpass>` and optionally `--user=<user>`
 Important note: operation require SSL API already initialized.
 
 ### custom-api and custom-ssh
@@ -96,12 +102,12 @@ Example:
 ```
 [[custom-ssh.command]]
 body = "/certificate print detail"
-sleep = "1s"
+sleep_ms = 1000
 match_prefix = "c"
 match = '(?m)^\s+(\d+).*mtbulkdevice'
 [[custom-ssh.command]]
 body = "/certificate remove %{c1}"
-sleep = "100ms"
+sleep_ms = 100
 [[custom-ssh.command]]
 body = "/system upgrade upgrade-package-source add address=10.0.0.1 user=test"
 expect = "password:"
@@ -119,7 +125,7 @@ body = "/user print"
 
 Command's options:
 - body: command with parameters, allowed to use regex matches in format %{[prefix][number of numbered capturing group]}
-- sleep: wait given time duration after executing command, required by some commands (e.g. `/system upgrade refresh`)
+- sleep_ms: wait given time duration after executing command, required by some commands (e.g. `/system upgrade refresh`)
 - expect: regexp used to verify that command's response match expected value
 - match: regexp used to search value in command's output, using Go syntax https://github.com/google/re2/wiki/Syntax 
 - match_prefix: for each match MT-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
@@ -135,15 +141,16 @@ Configuration file is written in TOML format (https://github.com/toml-lang/toml)
 ### Loading sequence 
 
 - Application defaults
-- System (/etc/mt-bulk/config.cfg, /Library/Application Support/MT-bulk/config.cfg)
-- Home (~/.mt-bulk.cfg, ~/Library/Application Support/Uping/config.cfg)
-- Command line -C option
+- System (`/etc/mt-bulk/config.cfg`, `/Library/Application Support/MT-bulk/config.cfg`)
+- Home (`~/.mt-bulk.cfg`, `~/Library/Application Support/Uping/config.cfg`)
+- Command line `-C` option
 
 ### Hosts
 
 Host can be specified using format:
-- <ip>
-- <ip>:<port>
+- `ip`
+- `ip:port`
+- `foo.bar.com:port`
 
 This rule applies to hosts loaded using `--source-file` or provided directly by `[<hosts>...]`
 
@@ -156,6 +163,17 @@ This rule applies to hosts loaded using `--source-file` or provided directly by 
 - Some older RouterOS allows old and unsecure ciphers, SSH implementation builtinto MT-bulk will not establish connection using such ciphers, please upgrade your Mikrotik/RouterOS device
 - Use strong-crypto by setting `/ip ssh set strong-crypto=yes` on RouterOS
 - If nothing helps please provide log of establishing connection using ssh command `ssh -vvv <user>@<ip>:<port>` 
+
+## Version 2 breaking changes
+
+### Command line options
+
+CLI in version 2.x is simplified, all switches and configuring options are moved into configuration file, CLI is used to specify operation mode, configuration file and source of hosts to parse.
+
+### Configuration file
+
+Configuration structure is rewrited and divided into few sections. Some of options changed as well (eg. `verify_check_sleep` into `verify_check_sleep_ms`). Please compare your current configuratio file with attached `mt-bulk.example.cfg`. 
+To let know to MT-bulk that configuration file is compatible with version 2.x new entry in config file was added: `version = 2`.
 
 ## Credits
 

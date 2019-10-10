@@ -2,13 +2,14 @@ package driver
 
 import (
 	"bufio"
+	"context"
 	"os"
 
-	"github.com/migotom/mt-bulk/internal/schema"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-// FileLoadHosts loads list of hosts from file
-func FileLoadHosts(hostParser schema.HostParserFunc, filename string) (hosts []schema.Host, err error) {
+// FileLoadJobs loads list of jobs from file.
+func FileLoadJobs(ctx context.Context, jobTemplate entities.Job, filename string) (jobs []entities.Job, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -17,15 +18,17 @@ func FileLoadHosts(hostParser schema.HostParserFunc, filename string) (hosts []s
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		host, err := hostParser(schema.Host{IP: scanner.Text()})
-		if err != nil {
+		job := jobTemplate
+		job.Host = entities.Host{IP: scanner.Text()}
+		if err := job.Host.Parse(); err != nil {
 			return nil, err
 		}
-		hosts = append(hosts, host)
+
+		jobs = append(jobs, job)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 
-	return hosts, nil
+	return jobs, nil
 }

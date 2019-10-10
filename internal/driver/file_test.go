@@ -1,47 +1,36 @@
 package driver
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
 
-	"github.com/migotom/mt-bulk/internal/schema"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-func TestFileLoadHosts(t *testing.T) {
+func TestFileLoadJobs(t *testing.T) {
 	cases := []struct {
 		Name          string
-		ParserFunc    schema.HostParserFunc
 		FileContent   string
-		ExpectedHosts []schema.Host
+		ExpectedJobs  []entities.Job
 		ExpectedError error
 	}{
 		{
-			Name: "OK",
-			ParserFunc: func(host schema.Host) (schema.Host, error) {
-				return host, nil
+			Name:        "OK",
+			FileContent: "192.168.1.1\n192.168.1.2:44",
+			ExpectedJobs: []entities.Job{
+				entities.Job{Host: entities.Host{IP: "192.168.1.1"}},
+				entities.Job{Host: entities.Host{IP: "192.168.1.2", Port: "44"}},
 			},
-			FileContent:   "192.168.1.1\n192.168.1.2",
-			ExpectedHosts: []schema.Host{schema.Host{IP: "192.168.1.1"}, schema.Host{IP: "192.168.1.2"}},
 		},
 		{
-			Name: "OK, verify calling parser func with result OK",
-			ParserFunc: func(host schema.Host) (schema.Host, error) {
-				return schema.Host{IP: "parsed"}, nil
-			},
-			FileContent:   "192.168.1.1:22\n192.168.1.2:22",
-			ExpectedHosts: []schema.Host{schema.Host{IP: "parsed"}, schema.Host{IP: "parsed"}},
-		},
-		{
-			Name: "ERROR, verify calling parser func with result ERROR",
-			ParserFunc: func(host schema.Host) (schema.Host, error) {
-				return schema.Host{}, errors.New("some error")
-			},
-			FileContent:   "192.168.1.1:22\n192.168.1.2:22",
-			ExpectedHosts: nil,
-			ExpectedError: errors.New("some error"),
+			Name:          "Wrong, invalid hostname",
+			FileContent:   "foo\n192.168.1.2:22",
+			ExpectedJobs:  nil,
+			ExpectedError: errors.New("can't resolve host: foo"),
 		},
 	}
 	for _, tc := range cases {
@@ -58,12 +47,12 @@ func TestFileLoadHosts(t *testing.T) {
 				t.Errorf("Can't close temporary test file %v", err)
 			}
 
-			hosts, err := FileLoadHosts(tc.ParserFunc, tmpfile.Name())
+			hosts, err := FileLoadJobs(context.Background(), entities.Job{}, tmpfile.Name())
 			if !reflect.DeepEqual(err, tc.ExpectedError) {
 				t.Errorf("got:%v, expected:%v", err, tc.ExpectedError)
 			}
-			if !reflect.DeepEqual(hosts, tc.ExpectedHosts) {
-				t.Errorf("got:%v, expected:%v", hosts, tc.ExpectedHosts)
+			if !reflect.DeepEqual(hosts, tc.ExpectedJobs) {
+				t.Errorf("got:%v, expected:%v", hosts, tc.ExpectedJobs)
 			}
 		})
 	}

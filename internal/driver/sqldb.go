@@ -1,18 +1,19 @@
 package driver
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
 	_ "github.com/lib/pq" // load psql driver
-	"github.com/migotom/mt-bulk/internal/schema"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
 
 const maxRetries = 3
 
 type sqlDB struct {
 	conn     *sql.DB
-	dbConfig *schema.DBConfig
+	dbConfig *DBConfig
 }
 
 func (d *sqlDB) connect() (err error) {
@@ -23,7 +24,6 @@ func (d *sqlDB) connect() (err error) {
 type retryFunc func() error
 
 // retry tries to process operation and reconnects if got mysql error.
-// TODO add retryable errors
 func (d *sqlDB) retry(operation retryFunc) (err error) {
 	for retries := 0; retries < maxRetries; retries++ {
 		if err = operation(); err != nil {
@@ -57,7 +57,7 @@ func (d *sqlDB) Exec(query string, args ...interface{}) (result sql.Result, err 
 	return
 }
 
-func getDB(dbConfig *schema.DBConfig) *sqlDB {
+func getDB(dbConfig *DBConfig) *sqlDB {
 	db, ok := dbConfig.Connection.(*sqlDB)
 	if !ok {
 		db = &sqlDB{}
@@ -68,20 +68,20 @@ func getDB(dbConfig *schema.DBConfig) *sqlDB {
 }
 
 // DBCleaner closes DB connection.
-func DBCleaner(dbConfig *schema.DBConfig) {
+func DBCleaner(dbConfig *DBConfig) {
 	if db, ok := dbConfig.Connection.(*sqlDB); ok {
 		db.conn.Close()
 	}
 }
 
-// DBSqlLoadHosts loads list of hosts from database.
-func DBSqlLoadHosts(hostParser schema.HostParserFunc, dbConfig *schema.DBConfig) ([]schema.Host, error) {
+// DBSqlLoadJobs loads list of jobs from database.
+func DBSqlLoadJobs(ctx context.Context, jobTemplate entities.Job, dbConfig *DBConfig) ([]entities.Job, error) {
 	db := getDB(dbConfig)
 	if err := db.connect(); err != nil {
 		return nil, err
 	}
 
-	var hosts []schema.Host
+	var jobs []entities.Job
 
 	rows, err := db.Query(dbConfig.Queries.GetDevices, dbConfig.IDserver)
 	if err != nil {
@@ -89,23 +89,40 @@ func DBSqlLoadHosts(hostParser schema.HostParserFunc, dbConfig *schema.DBConfig)
 	}
 	defer rows.Close()
 
+	// TODO add ctx.Done check for very long running queries
 	for rows.Next() {
-		host := schema.Host{}
+		job := jobTemplate
+		job.Host = entities.Host{}
 
-		if err = rows.Scan(&host.ID, &host.IP); err != nil {
+		if err = rows.Scan(&job.Host.ID, &job.Host.IP); err != nil {
 			return nil, err
 		}
 
-		if host, err = hostParser(host); err != nil {
+		if err := job.Host.Parse(); err != nil {
 			return nil, err
 		}
 
-		hosts = append(hosts, host)
+		jobs = append(jobs, job)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return hosts, nil
+	return jobs, nil
+}
+
+// DBConfig defines database connection settings.
+type DBConfig struct {
+	Driver     string
+	Params     string
+	Connection interface{}
+	IDserver   int `toml:"id_server"`
+	Queries    DBQueries
+}
+
+// DBQueries defines list of database queries.
+type DBQueries struct {
+	GetDevices   string `toml:"get_devices"`
+	UpdateDevice string `toml:"update_device"`
 }

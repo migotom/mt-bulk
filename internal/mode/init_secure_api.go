@@ -3,45 +3,59 @@ package mode
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
-	"time"
 
-	"github.com/migotom/mt-bulk/internal/schema"
-	"github.com/migotom/mt-bulk/internal/service"
+	"github.com/migotom/mt-bulk/internal/clients"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-// InitSecureAPIHandler mode initializes device for secure API usage (copies and sets up certificate)
-func InitSecureAPIHandler(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
-	ssh := newService(config, host)
-	log.Printf("[InitSecureAPI] IP %s", host.IP)
+// InitSecureAPI initializes Mikrotik secure API using SSH client.
+func InitSecureAPI(ctx context.Context, client clients.Client, job *entities.Job) (results []string, err error) {
+	certificatesDirectory, ok := job.Data["keys_directory"]
+	if !ok || certificatesDirectory == "" {
+		return nil, fmt.Errorf("keys_directory not specified")
+	}
 
-	return ssh.HandleSequence(ctx, func(payloadService service.Service) error {
-		d := payloadService.(service.CopyFiler)
+	if err := EstablishConnection(ctx, client, &job.Host); err != nil {
+		return nil, err
+	}
+	defer client.Close()
 
-		// copy certificate to device
-		if err := d.CopyFile(ctx, filepath.Join(config.Certs.Directory, "device.crt"), "mtbulkdevice.crt"); err != nil {
-			return fmt.Errorf("file copy error %v", err)
-		}
-		if err := d.CopyFile(ctx, filepath.Join(config.Certs.Directory, "device.key"), "mtbulkdevice.key"); err != nil {
-			return fmt.Errorf("file copy error %v", err)
-		}
+	copier, ok := client.(clients.Copier)
+	if !ok {
+		return nil, fmt.Errorf("copy file operation not implemented for protocol %v", client)
+	}
 
-		// prepare sequence of commands to run on device
-		cmds := []schema.Command{
-			{Body: `/ip service set api-ssl certificate=none`},
-			{Body: `/certificate print detail`, MatchPrefix: "c", Match: `(?m)^\s+(\d+).*mtbulkdevice`},
-			{Body: `/certificate remove %{c1}`},
-			{Body: `/certificate import file-name=mtbulkdevice.crt passphrase=""`, Expect: "certificates-imported: 1"},
-			{Body: `/certificate import file-name=mtbulkdevice.key passphrase=""`, Expect: "private-keys-imported: 1", Sleep: schema.Duration{Duration: time.Duration(config.VerifySleep) * time.Millisecond}},
-			{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`},
-		}
+	config := client.GetConfig()
 
-		if err := service.ExecuteCommands(ctx, payloadService, cmds); err != nil {
-			return fmt.Errorf("executing command error %v", err)
-		}
+	var sftpCopyResult string
+	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.crt"), "mtbulkdevice.crt")
+	if err != nil {
+		return nil, fmt.Errorf("file copy error %v", err)
+	}
+	results = append(results, sftpCopyResult)
 
-		return nil
-	})
+	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.key"), "mtbulkdevice.key")
+	if err != nil {
+		return nil, fmt.Errorf("file copy error %v", err)
+	}
+	results = append(results, sftpCopyResult)
 
+	// prepare sequence of commands to run on device
+	commands := []entities.Command{
+		{Body: `/ip service set api-ssl certificate=none`},
+		{Body: `/certificate print detail`, MatchPrefix: "c", Match: `(?m)^\s+(\d+).*mtbulkdevice`},
+		{Body: `/certificate remove %{c1}`},
+		{Body: `/certificate import file-name=mtbulkdevice.crt passphrase=""`, Expect: "certificates-imported: 1"},
+		{Body: `/certificate import file-name=mtbulkdevice.key passphrase=""`, Expect: "private-keys-imported: 1", SleepMs: config.VerifySleepMs},
+		{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`},
+	}
+
+	sshResults, err := ExecuteCommands(ctx, client, commands)
+	if err != nil {
+		err = fmt.Errorf("executing InitSecureAPI commands error %v", err)
+	}
+	results = append(results, sshResults...)
+
+	return results, err
 }

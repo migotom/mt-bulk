@@ -2,34 +2,55 @@ package mode
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
-	"github.com/migotom/mt-bulk/internal/schema"
-	"github.com/migotom/mt-bulk/internal/service/mocks"
+	"github.com/migotom/mt-bulk/internal/clients/mocks"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-func TestInitSecureAPIHandler(t *testing.T) {
-	MTAPI := mocks.Service{}
-
-	appConfig := schema.GeneralConfig{}
-	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["ssh"] = &schema.Service{}
-
-	if err := InitSecureAPIHandler(context.Background(), MTAPI.GetService, &appConfig, schema.Host{}); err != nil {
-		t.Errorf("not expected error %v", err)
+func TestInitSecureAPI(t *testing.T) {
+	cases := []struct {
+		Name          string
+		Job           entities.Job
+		Expected      []string
+		ExpectedError error
+	}{
+		{
+			Name: "OK",
+			Job:  entities.Job{Host: entities.Host{Password: "old"}, Data: map[string]string{"keys_directory": "certs/"}},
+			Expected: []string{
+				`/<mt-bulk>copy sftp://certs/device.crt mtbulkdevice.crt`,
+				`/<mt-bulk>copy sftp://certs/device.key mtbulkdevice.key`,
+				`/ip service set api-ssl certificate=none`,
+				`/certificate print detail`,
+				`/certificate remove %{c1}`,
+				`/certificate import file-name=mtbulkdevice.crt passphrase=""`,
+				`/certificate import file-name=mtbulkdevice.key passphrase=""`,
+				`/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`,
+			},
+		},
+		{
+			Name:          "Wrong, missing certificated directory",
+			Job:           entities.Job{Host: entities.Host{Password: "old"}},
+			Expected:      nil,
+			ExpectedError: errors.New("keys_directory not specified"),
+		},
 	}
-	if !reflect.DeepEqual(MTAPI.CommandsExecuted, []string{
-		`/ip service set api-ssl certificate=none`,
-		`/certificate print detail`,
-		`/certificate remove %{c1}`,
-		`/certificate import file-name=mtbulkdevice.crt passphrase=""`,
-		`/certificate import file-name=mtbulkdevice.key passphrase=""`,
-		`/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`,
-	}) {
-		t.Errorf("not expected commands %v", MTAPI.CommandsExecuted)
-	}
-	if !reflect.DeepEqual(MTAPI.FilesCopied, []string{"mtbulkdevice.crt", "mtbulkdevice.key"}) {
-		t.Errorf("not expected copied files %v", MTAPI.FilesCopied)
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+
+			client := mocks.Client{}
+
+			results, err := InitSecureAPI(context.Background(), client, &tc.Job)
+			if !reflect.DeepEqual(err, tc.ExpectedError) {
+				t.Errorf("got:%v, expected:%v", err, tc.ExpectedError)
+			}
+
+			if !reflect.DeepEqual(results, tc.Expected) {
+				t.Errorf("not expected commands %v", results)
+			}
+		})
 	}
 }

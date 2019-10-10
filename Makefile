@@ -1,10 +1,3 @@
-# Go
-GOCMD=go
-GOBUILD=$(GOCMD) build -ldflags="-s -w"
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-
 # Project
 MTBULK_PROJECT=cmd/mt-bulk/*
 
@@ -14,7 +7,14 @@ BUILD_DIR=build
 CONFIG_EXAMPLE=mt-bulk.example.cfg
 HOSTS_EXAMPLE=hosts.example.txt
 README=README.md
-VERSION=1.6.2
+VERSION=2.0.0
+
+# Go
+GOCMD=go
+GOBUILD=$(GOCMD) build -ldflags="-s -w -X main.version=${VERSION}"
+GOCLEAN=$(GOCMD) clean
+GOTEST=$(GOCMD) test
+GOGET=$(GOCMD) get
 
 # Build
 all: build

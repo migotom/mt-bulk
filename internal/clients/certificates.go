@@ -1,4 +1,4 @@
-package service
+package clients
 
 import (
 	"crypto/rand"
@@ -7,22 +7,28 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/migotom/mt-bulk/internal/schema"
+	"golang.org/x/crypto/ssh"
 )
 
-// GenerateCA generates CA key and certificate needed for sign device/client certificates.
-func GenerateCA(config *schema.GeneralConfig) error {
+// GenerateCA generates CA key and certificate needed for sign device/clients certificates.
+func GenerateCA(store string) error {
 	log.Println("[CONFIG] Generating CA")
 
-	if _, err := os.Stat(config.Certs.Directory); err != nil {
-		return fmt.Errorf("can't locate certificates directory: %s", err)
+	if store == "" {
+		return errors.New("certificates directory not provided")
+	}
+
+	if _, err := os.Stat(store); err != nil {
+		return fmt.Errorf("can't locate certificates directory (%s), %s", store, err)
 	}
 
 	privateCA, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -30,7 +36,7 @@ func GenerateCA(config *schema.GeneralConfig) error {
 		return fmt.Errorf("can't generate CA private key: %s", err)
 	}
 
-	privateCAFile, err := os.OpenFile(filepath.Join(config.Certs.Directory, "ca.key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	privateCAFile, err := os.OpenFile(filepath.Join(store, "ca.key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("can't create CA private key: %s", err)
 	}
@@ -59,7 +65,7 @@ func GenerateCA(config *schema.GeneralConfig) error {
 		return fmt.Errorf("can't generate CA certificate: %s", err)
 	}
 
-	certificateFile, err := os.Create(filepath.Join(config.Certs.Directory, "ca.crt"))
+	certificateFile, err := os.Create(filepath.Join(store, "ca.crt"))
 	if err != nil {
 		return fmt.Errorf("can't create CA certificate: %s", err)
 	}
@@ -71,20 +77,20 @@ func GenerateCA(config *schema.GeneralConfig) error {
 }
 
 // GenerateCerts generates and sign using CA certificate generic key and certificate.
-func GenerateCerts(config *schema.GeneralConfig, subject string) error {
+func GenerateCerts(store, subject string) error {
 	log.Println("[CONFIG] Generating " + subject + " certificate")
 
-	if _, err := os.Stat(config.Certs.Directory); err != nil {
-		return fmt.Errorf("can't locate certificates directory: %s", err)
+	if store == "" {
+		return errors.New("certificates directory not provided")
 	}
 
-	tlsCA, err := tls.LoadX509KeyPair(filepath.Join(config.Certs.Directory, "ca.crt"), filepath.Join(config.Certs.Directory, "ca.key"))
+	if _, err := os.Stat(store); err != nil {
+		return fmt.Errorf("can't locate certificates directory (%s), %s", store, err)
+	}
+
+	tlsCA, err := tls.LoadX509KeyPair(filepath.Join(store, "ca.crt"), filepath.Join(store, "ca.key"))
 	if err != nil {
 		return fmt.Errorf("can't load CA key pair: %s", err)
-	}
-
-	if _, err := os.Stat(config.Certs.Directory); err != nil {
-		return fmt.Errorf("can't load CA certificate: %s", err)
 	}
 
 	certificateCA, err := x509.ParseCertificate(tlsCA.Certificate[0])
@@ -97,7 +103,7 @@ func GenerateCerts(config *schema.GeneralConfig, subject string) error {
 		return fmt.Errorf("can't generate %s private key: %s", subject, err)
 	}
 
-	privateFile, err := os.OpenFile(filepath.Join(config.Certs.Directory, subject+".key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	privateFile, err := os.OpenFile(filepath.Join(store, subject+".key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("can't create %s private key: %s", subject, err)
 	}
@@ -127,13 +133,50 @@ func GenerateCerts(config *schema.GeneralConfig, subject string) error {
 		return fmt.Errorf("can't generate %s certificate: %s", subject, err)
 	}
 
-	certificateFile, err := os.Create(filepath.Join(config.Certs.Directory, subject+".crt"))
+	certificateFile, err := os.Create(filepath.Join(store, subject+".crt"))
 	if err != nil {
 		return fmt.Errorf("can't create %s certificate: %s", subject, err)
 	}
 
 	pem.Encode(certificateFile, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
 	certificateFile.Close()
+
+	return nil
+}
+
+// GenerateKeys generates private and public keys.
+func GenerateKeys(store string) error {
+	log.Println("[CONFIG] Generating SSH keys")
+
+	if store == "" {
+		return errors.New("keys directory not provided")
+	}
+
+	if _, err := os.Stat(store); err != nil {
+		return fmt.Errorf("can't locate keys directory (%s), %s", store, err)
+	}
+
+	private, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("can't generate private key: %s", err)
+	}
+
+	privateFile, err := os.OpenFile(filepath.Join(store, "id_rsa.key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("can't create private key: %s", err)
+	}
+	pem.Encode(privateFile, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(private)})
+	privateFile.Close()
+
+	public, err := ssh.NewPublicKey(&private.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filepath.Join(store, "id_rsa.pub"), ssh.MarshalAuthorizedKey(public), 0600)
+	if err != nil {
+		return fmt.Errorf("can't create public key: %s", err)
+	}
 
 	return nil
 }

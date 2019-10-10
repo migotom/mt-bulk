@@ -2,27 +2,22 @@ package mode
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/migotom/mt-bulk/internal/schema"
-	"github.com/migotom/mt-bulk/internal/service"
+	"github.com/migotom/mt-bulk/internal/clients"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-// CustomAPI executes custom sequence of commands using Mikrotik SSL API.
-func CustomAPI(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
-	mt := newService(config, host)
+// Custom executes by client custom job.
+func Custom(ctx context.Context, client clients.Client, job *entities.Job) ([]string, error) {
+	if err := EstablishConnection(ctx, client, &job.Host); err != nil {
+		return nil, err
+	}
+	defer client.Close()
 
-	return mt.HandleSequence(ctx, func(payloadService service.Service) error {
-		return service.ExecuteCommands(ctx, payloadService, config.CustomAPISequence.Command)
-	})
-
-}
-
-// CustomSSH executes custom sequence of commands using SSH protocol.
-func CustomSSH(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
-	ssh := newService(config, host)
-
-	return ssh.HandleSequence(ctx, func(payloadService service.Service) error {
-		return service.ExecuteCommands(ctx, payloadService, config.CustomSSHSequence.Command)
-	})
-
+	results, err := ExecuteCommands(ctx, client, job.Commands)
+	if err != nil {
+		return nil, fmt.Errorf("executing custom commands error %v", err)
+	}
+	return results, nil
 }

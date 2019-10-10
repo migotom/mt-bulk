@@ -1,4 +1,4 @@
-package mtbulk
+package service
 
 import (
 	"encoding/json"
