@@ -9,20 +9,10 @@ import (
 	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-// func NewSSHClient(config *schema.GeneralConfig, host entities.Host) interface{} {
-// 	return SSHClient{}
-// }
-
 // Client mocked.
 type Client struct {
 	Host entities.Host
 }
-
-// func (t *Client) GetClient(config *schema.GeneralConfig, host entities.Host) client.Client {
-// 	t.AppConfig = config
-// 	t.Host = host
-// 	return t
-// }
 
 func (t Client) GetConfig() clients.Config {
 	return clients.Config{Retries: 1}
