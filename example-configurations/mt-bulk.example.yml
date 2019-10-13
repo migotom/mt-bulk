@@ -1,16 +1,6 @@
 version: 2
-listen: ":8080"
-key_store: "keys/gw"
-token_secret: "secret"
-authenticate:
-  - key: "123"
-    allowed_host_patterns:
-      - "192.168.1..*"
-      - "admin@10.10.201.*"
-  - key: "abc"
-    allowed_host_patterns:
-      - "192.168.2..*"
-      - ".*"
+verbose: true
+skip_summary: false
 service:
   workers: 4
   skip_version_check: false
@@ -32,3 +22,16 @@ service:
       password: "new_secret, old_secret"
       user: "admin"
       keys_store: "keys/api"
+db:
+  driver: "postgres"
+  params: "postgres://user:pass@host/db"
+  id_server: 1
+  queries:
+    get_devices: "SELECT id, ip FROM devices WHERE id_server = $1"
+
+custom-ssh:
+  command:
+    - body: "/user print"
+      expect: "NAME"
+    - body: "/interface print"
+      expect: "NAME"
