@@ -7,6 +7,7 @@ import (
 
 	"github.com/migotom/mt-bulk/internal/clients/mocks"
 	"github.com/migotom/mt-bulk/internal/entities"
+	"go.uber.org/zap"
 )
 
 func TestCustom(t *testing.T) {
@@ -26,10 +27,10 @@ func TestCustom(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-
+			sugar := zap.NewExample().Sugar()
 			client := mocks.Client{}
 
-			results, err := Custom(context.Background(), client, &tc.Job)
+			results, err := Custom(context.Background(), sugar, client, &tc.Job)
 			if !reflect.DeepEqual(err, tc.ExpectedError) {
 				t.Errorf("got:%v, expected:%v", err, tc.ExpectedError)
 			}

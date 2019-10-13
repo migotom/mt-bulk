@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/migotom/mt-bulk/internal/entities"
 	"github.com/migotom/mt-bulk/internal/mode"
 	"github.com/migotom/mt-bulk/internal/service"
@@ -13,6 +15,7 @@ import (
 
 // MTbulk service.
 type MTbulk struct {
+	sugar       *zap.SugaredLogger
 	jobTemplate entities.Job
 	jobsLoaders []entities.JobsLoaderFunc
 	jobDone     chan struct{}
@@ -24,18 +27,19 @@ type MTbulk struct {
 }
 
 // NewMTbulk returns new MTbulk service.
-func NewMTbulk(arguments map[string]interface{}, version string) (MTbulk, error) {
+func NewMTbulk(sugar *zap.SugaredLogger, arguments map[string]interface{}, version string) (*MTbulk, error) {
 	config, jobsLoaders, jobTemplate, err := configParser(arguments, version)
 	if err != nil {
-		return MTbulk{}, err
+		return &MTbulk{}, err
 	}
 
-	return MTbulk{
+	return &MTbulk{
 		Config:      config,
+		sugar:       sugar,
 		jobsLoaders: jobsLoaders,
 		jobTemplate: jobTemplate,
 		jobDone:     make(chan struct{}),
-		Service:     service.NewService(config.Service),
+		Service:     service.NewService(sugar, config.Service),
 		Results:     make(chan entities.Result),
 	}, nil
 }

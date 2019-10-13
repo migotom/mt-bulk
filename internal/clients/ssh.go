@@ -31,7 +31,7 @@ type SSH struct {
 	session *cryptossh.Session
 
 	stdoutBuf io.Reader
-	stdinBuf  io.WriteCloser
+	stdinBuf  io.Writer
 	prompt    *regexp.Regexp
 
 	Config
@@ -151,7 +151,6 @@ func (ssh *SSH) RunCmd(body string, expect *regexp.Regexp) (result string, err e
 		result, err = waitForExpected(ssh.stdoutBuf, expect)
 	} else {
 		result, err = waitForExpected(ssh.stdoutBuf, ssh.prompt)
-
 	}
 	return ssh.prompt.ReplaceAllString(result, ""), err
 }
@@ -176,12 +175,13 @@ func (ssh *SSH) initializeSession() (err error) {
 	if err = ssh.session.RequestPty("xterm", ssh.Pty.Height, ssh.Pty.Widht, modes); err != nil {
 		return fmt.Errorf("request for pseudo terminal failed: %s", err)
 	}
-	if ssh.stdoutBuf, err = ssh.session.StdoutPipe(); err != nil {
-		return fmt.Errorf("request for stdout pipe failed: %s", err)
-	}
 	if ssh.stdinBuf, err = ssh.session.StdinPipe(); err != nil {
 		return fmt.Errorf("request for stdin pipe failed: %s", err)
 	}
+	if ssh.stdoutBuf, err = ssh.session.StdoutPipe(); err != nil {
+		return fmt.Errorf("request for stdout pipe failed: %s", err)
+	}
+
 	if err = ssh.session.Shell(); err != nil {
 		return fmt.Errorf("failed to start shell: %s", err)
 	}

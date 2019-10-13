@@ -10,6 +10,7 @@ type JobsLoaderFunc func(context.Context, Job) ([]Job, error)
 
 // Job represents single job request.
 type Job struct {
+	ID       string            `json:"-"`
 	Host     Host              `toml:"host" yaml:"host"`
 	Kind     string            `toml:"kind" yaml:"kind"`
 	Commands []Command         `toml:"commands" yaml:"commands"`

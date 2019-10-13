@@ -23,20 +23,20 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 	if mtbulkConfig.Version < 2 {
 		return Config{}, errors.New("incompatible configuration version, required version 2 or above")
 	}
+	if mtbulkConfig.KeyStore == "" {
+		return Config{}, errors.New("key store for HTTPS server not defined")
+	}
+	if mtbulkConfig.Listen == "" {
+		return Config{}, errors.New("HTTPS server listen address not defined")
+	}
+
 	if gen, _ := arguments["gen-https-certs"].(bool); gen {
 		if err := clients.GenerateCA(mtbulkConfig.KeyStore); err != nil {
 			return Config{}, err
 		}
-		if err := clients.GenerateCerts(mtbulkConfig.KeyStore, "rest-gateway"); err != nil {
+		if err := clients.GenerateCerts(mtbulkConfig.KeyStore, "rest-api"); err != nil {
 			return Config{}, err
 		}
-		return Config{}, nil
-	}
-	if gen, _ := arguments["gen-refresh-token"].(bool); gen {
-		if err := clients.GenerateKeys(mtbulkConfig.KeyStore); err != nil {
-			return Config{}, err
-		}
-		return Config{}, nil
 	}
 
 	return mtbulkConfig, nil

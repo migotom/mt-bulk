@@ -7,16 +7,17 @@ import (
 
 	"github.com/migotom/mt-bulk/internal/clients"
 	"github.com/migotom/mt-bulk/internal/entities"
+	"go.uber.org/zap"
 )
 
 // InitSecureAPI initializes Mikrotik secure API using SSH client.
-func InitSecureAPI(ctx context.Context, client clients.Client, job *entities.Job) (results []entities.CommandResult, err error) {
+func InitSecureAPI(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) (results []entities.CommandResult, err error) {
 	certificatesDirectory, ok := job.Data["keys_directory"]
 	if !ok || certificatesDirectory == "" {
 		return nil, fmt.Errorf("keys_directory not specified")
 	}
 
-	if err := EstablishConnection(ctx, client, &job.Host); err != nil {
+	if err := clients.EstablishConnection(ctx, sugar, client, job); err != nil {
 		return nil, err
 	}
 	defer client.Close()
@@ -51,7 +52,7 @@ func InitSecureAPI(ctx context.Context, client clients.Client, job *entities.Job
 		{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`},
 	}
 
-	sshResults, err := ExecuteCommands(ctx, client, commands)
+	sshResults, err := clients.ExecuteCommands(ctx, client, commands)
 	if err != nil {
 		err = fmt.Errorf("executing InitSecureAPI commands error %v", err)
 	}

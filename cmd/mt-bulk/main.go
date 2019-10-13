@@ -9,6 +9,7 @@ import (
 
 	docopt "github.com/docopt/docopt-go"
 	mtbulk "github.com/migotom/mt-bulk/internal/service/mt-bulk"
+	"go.uber.org/zap"
 )
 
 var usage = `MT-bulk.
@@ -33,11 +34,18 @@ Options:
 var version string
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Could not initialize logger: %s\n", err)
+	}
+	sugar := logger.Sugar()
+	defer sugar.Sync()
+
 	arguments, _ := docopt.ParseArgs(usage, os.Args[1:], version)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mtbulk, err := mtbulk.NewMTbulk(arguments, version)
+	mtbulk, err := mtbulk.NewMTbulk(sugar, arguments, version)
 	if err != nil {
 		log.Fatalf("Configuration parser error: %s\n", err)
 	}

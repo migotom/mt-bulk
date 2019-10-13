@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/migotom/mt-bulk/internal/clients/mocks"
 	"github.com/migotom/mt-bulk/internal/entities"
 )
@@ -34,9 +36,10 @@ func TestChangePassword(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 
+			sugar := zap.NewExample().Sugar()
 			client := mocks.Client{}
 
-			results, err := ChangePassword(context.Background(), client, &tc.Job)
+			results, err := ChangePassword(context.Background(), sugar, client, &tc.Job)
 			if !reflect.DeepEqual(err, tc.ExpectedError) {
 				t.Errorf("got:%v, expected:%v", err, tc.ExpectedError)
 			}

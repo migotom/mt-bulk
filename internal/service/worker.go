@@ -3,73 +3,26 @@ package service
 import (
 	"context"
 	"sort"
-	"sync"
+
+	"go.uber.org/zap"
 
 	"github.com/migotom/mt-bulk/internal/clients"
 	"github.com/migotom/mt-bulk/internal/entities"
 	"github.com/migotom/mt-bulk/internal/mode"
 )
 
-// WorkerPool of SSH/Mikrotik SSL API clients.
-type WorkerPool struct {
-	sync.Mutex
-
-	current int
-	pool    []*Worker
-}
-
-// NewWorkerPool returns new worker pool.
-func NewWorkerPool(numberOfWorkers int) *WorkerPool {
-	return &WorkerPool{
-		current: 0,
-		pool:    make([]*Worker, 0, numberOfWorkers),
-	}
-}
-
-// Close all workers from worker pool.
-func (p *WorkerPool) Close() {
-	p.Lock()
-	defer p.Unlock()
-
-	for _, worker := range p.pool {
-		close(worker.jobs)
-	}
-}
-
-// Add new worker to worker pool.
-func (p *WorkerPool) Add(worker *Worker) {
-	p.Lock()
-	defer p.Unlock()
-
-	p.pool = append(p.pool, worker)
-}
-
-// Get worker that is already processing jobs for given host or if not found any pick one using round robin.
-func (p *WorkerPool) Get(host entities.Host) (worker *Worker) {
-	p.Lock()
-	defer p.Unlock()
-	for _, worker := range p.pool {
-		if worker.ProcessingHost(host) {
-			return worker
-		}
-	}
-
-	if p.current >= len(p.pool) {
-		p.current = p.current % len(p.pool)
-	}
-	return p.pool[p.current]
-}
-
 // Worker processing given jobs by jobs channel and sending responses back to results channel.
 type Worker struct {
 	version         string
+	sugar           *zap.SugaredLogger
 	jobs            chan entities.Job
 	processingHosts []entities.Host
 }
 
 // NewWorker returns new worker.
-func NewWorker(jobsQueueSize int, version string) *Worker {
+func NewWorker(sugar *zap.SugaredLogger, jobsQueueSize int, version string) *Worker {
 	return &Worker{
+		sugar:   sugar,
 		version: version,
 		jobs:    make(chan entities.Job, jobsQueueSize),
 	}
@@ -113,11 +66,11 @@ func (w *Worker) ProcessJobs(ctx context.Context, clientConfig clients.Clients) 
 			case mode.CheckMTbulkVersionMode:
 				handler = mode.CheckMTbulkVersion(w.version)
 			default:
-				// TODO log this event
+				w.sugar.Infow("unexpected job", "kind", job.Kind)
 				continue
 			}
 
-			results, err := handler(ctx, client, &job)
+			results, err := handler(ctx, w.sugar, client, &job)
 
 			job.Result <- entities.Result{Job: job, Results: results, Error: err}
 			close(job.Result)

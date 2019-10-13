@@ -4,18 +4,22 @@ import (
 	"context"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/migotom/mt-bulk/internal/entities"
 )
 
 // Service of set of workers processing jobs on provided Mikrotik devices.
 type Service struct {
+	sugar  *zap.SugaredLogger
 	config Config
 	Jobs   chan entities.Job
 }
 
 // NewService returns new service.
-func NewService(config Config) *Service {
+func NewService(sugar *zap.SugaredLogger, config Config) *Service {
 	return &Service{
+		sugar:  sugar,
 		config: config,
 		Jobs:   make(chan entities.Job, config.Workers),
 	}
@@ -27,7 +31,7 @@ func (service *Service) Listen(ctx context.Context) {
 
 	workerPool := NewWorkerPool(service.config.Workers)
 	for i := 0; i < service.config.Workers; i++ {
-		w := NewWorker(8, service.config.Version)
+		w := NewWorker(service.sugar, 8, service.config.Version)
 		workerPool.Add(w)
 
 		wg.Add(1)

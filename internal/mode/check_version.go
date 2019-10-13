@@ -12,11 +12,12 @@ import (
 
 	"github.com/migotom/mt-bulk/internal/clients"
 	"github.com/migotom/mt-bulk/internal/entities"
+	"go.uber.org/zap"
 )
 
-// CheckMTbulkVersionMode executes by client custom job.
+// CheckMTbulkVersion executes by client custom job.
 func CheckMTbulkVersion(version string) OperationModeFunc {
-	return func(ctx context.Context, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
+	return func(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
 		if err := checkVersion(version); err != nil {
 			return []entities.CommandResult{
 				entities.CommandResult{

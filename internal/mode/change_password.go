@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/migotom/mt-bulk/internal/clients"
 	"github.com/migotom/mt-bulk/internal/entities"
 )
 
 // ChangePassword changes device's admin password.
-func ChangePassword(ctx context.Context, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
+func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
 	newPassword, ok := job.Data["new_password"]
 	if !ok || newPassword == "" {
 		return nil, fmt.Errorf("missing or empty new password for change password operation")
@@ -20,7 +22,7 @@ func ChangePassword(ctx context.Context, client clients.Client, job *entities.Jo
 		user = "admin"
 	}
 
-	if err := EstablishConnection(ctx, client, &job.Host); err != nil {
+	if err := clients.EstablishConnection(ctx, sugar, client, job); err != nil {
 		return nil, err
 	}
 	defer client.Close()
@@ -29,7 +31,7 @@ func ChangePassword(ctx context.Context, client clients.Client, job *entities.Jo
 		{Body: fmt.Sprintf("/user/set =numbers=%s =password=%s", user, newPassword), Expect: "!done"},
 	}
 
-	results, err := ExecuteCommands(ctx, client, commands)
+	results, err := clients.ExecuteCommands(ctx, client, commands)
 	if err != nil {
 		return results, fmt.Errorf("executing custom commands error %v", err)
 	}

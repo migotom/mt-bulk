@@ -3,12 +3,9 @@ package mtbulkrestapi
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"regexp"
 
-	"github.com/dgrijalva/jwt-go"
+	"go.uber.org/zap"
 
 	"github.com/migotom/mt-bulk/internal/entities"
 	"github.com/migotom/mt-bulk/internal/service"
@@ -17,19 +14,22 @@ import (
 // MTbulkRESTGateway service.
 type MTbulkRESTGateway struct {
 	Service *service.Service
+	sugar   *zap.SugaredLogger
+
 	Config
 }
 
 // NewMTbulkRestGateway returns new MTbulkRESTGateway service.
-func NewMTbulkRestGateway(arguments map[string]interface{}, version string) (MTbulkRESTGateway, error) {
+func NewMTbulkRestGateway(sugar *zap.SugaredLogger, arguments map[string]interface{}, version string) (*MTbulkRESTGateway, error) {
 	config, err := configParser(arguments, version)
 	if err != nil {
-		return MTbulkRESTGateway{}, err
+		return &MTbulkRESTGateway{}, err
 	}
 
-	return MTbulkRESTGateway{
+	return &MTbulkRESTGateway{
+		sugar:   sugar,
 		Config:  config,
-		Service: service.NewService(config.Service),
+		Service: service.NewService(sugar, config.Service),
 	}, nil
 }
 
@@ -39,6 +39,7 @@ func (mtbulk *MTbulkRESTGateway) RunWorkers(ctx context.Context) {
 	mtbulk.Service.Listen(ctx)
 }
 
+// JobHandler parses job request and process it with pool of workers.
 func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var job entities.Job
@@ -48,120 +49,41 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 			http.Error(w, "Bad request", 400)
 			return
 		}
-
-		claims := r.Context().Value("claims")
-		if claims == nil {
-			http.Error(w, "Bad request", 400)
-			return
-		}
-
-		tokenClaims, ok := claims.(TokenClaims)
-		if !ok {
-			http.Error(w, "Bad request", 400)
-			return
-		}
-
 		job.Host.Parse()
 
-		allowedToProcessHost := false
-		for _, allowedHostPattern := range tokenClaims.AllowedHostPatterns {
-			re, err := regexp.Compile(allowedHostPattern)
-			if err != nil {
-				http.Error(w, err.Error(), 500)
-			}
-			if re.MatchString(job.Host.String()) {
-				allowedToProcessHost = true
-				break
-			}
-		}
-		if !allowedToProcessHost {
-			http.Error(w, fmt.Sprintf("Not authenticated to host %s", job.Host), 401)
+		if err := mtbulk.AuthorizeRequest(r, &job); err != nil {
+			http.Error(w, err.Error(), 401)
 			return
 		}
+
+		id := r.Context().Value("id").(string)
+		mtbulk.sugar.Infow("processing job", "commands", job.Commands, "id", id)
 
 		resultChan := make(chan entities.Result)
 		job.Result = resultChan
+		job.ID = id
 
+		// send job to workers
 		select {
-		case <-ctx.Done():
+		case <-r.Context().Done():
 			http.Error(w, "Request cancelled by host", 410)
 			return
 		case mtbulk.Service.Jobs <- job:
 		}
 
+		// fetch result
 		select {
-		case <-ctx.Done():
+		case <-r.Context().Done():
 			http.Error(w, "Request cancelled by host", 410)
 			return
 		case result := <-resultChan:
 			if result.Error != nil {
 				w.WriteHeader(http.StatusNotAcceptable)
 			}
+
 			if err := json.NewEncoder(w).Encode(&result); err != nil {
 				http.Error(w, err.Error(), 500)
 			}
 		}
 	}
-}
-
-func (mtbulk *MTbulkRESTGateway) Authenticate(ctx context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var auth struct {
-			Key string `json:"key"`
-		}
-
-		decoder := json.NewDecoder(r.Body)
-		if err := decoder.Decode(&auth); err != nil {
-			http.Error(w, "Bad request", 400)
-		}
-
-		var claims TokenClaims
-		for _, authrole := range mtbulk.Config.Authenticate {
-			if authrole.Key == auth.Key {
-				claims.AllowedHostPatterns = authrole.AllowedHostPatterns
-
-				token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(mtbulk.Config.TokenSecret))
-				if err != nil {
-					http.Error(w, err.Error(), 500)
-					return
-				}
-
-				response := struct {
-					Token string `json:"token"`
-				}{
-					Token: token,
-				}
-				if err := json.NewEncoder(w).Encode(&response); err != nil {
-					http.Error(w, err.Error(), 500)
-					return
-				}
-				return
-			}
-		}
-
-		http.Error(w, "Not authenticated", 401)
-	}
-}
-
-func (mtbulk *MTbulkRESTGateway) AuthorizeMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorizationToken := r.Header.Get("Authorization")
-
-		var claims TokenClaims
-		token, err := jwt.ParseWithClaims(authorizationToken, &claims, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errors.New("Not authenticated")
-			}
-			return []byte(mtbulk.Config.TokenSecret), nil
-		})
-
-		if err != nil || !token.Valid {
-			http.Error(w, "Not authenticated", 401)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "claims", claims)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
-	})
 }
