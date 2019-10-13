@@ -10,7 +10,7 @@ import (
 )
 
 // InitSecureAPI initializes Mikrotik secure API using SSH client.
-func InitSecureAPI(ctx context.Context, client clients.Client, job *entities.Job) (results []string, err error) {
+func InitSecureAPI(ctx context.Context, client clients.Client, job *entities.Job) (results []entities.CommandResult, err error) {
 	certificatesDirectory, ok := job.Data["keys_directory"]
 	if !ok || certificatesDirectory == "" {
 		return nil, fmt.Errorf("keys_directory not specified")
@@ -30,16 +30,16 @@ func InitSecureAPI(ctx context.Context, client clients.Client, job *entities.Job
 
 	var sftpCopyResult string
 	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.crt"), "mtbulkdevice.crt")
+	results = append(results, entities.CommandResult{Body: sftpCopyResult, Error: err})
 	if err != nil {
-		return nil, fmt.Errorf("file copy error %v", err)
+		return results, fmt.Errorf("file copy error %v", err)
 	}
-	results = append(results, sftpCopyResult)
 
 	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.key"), "mtbulkdevice.key")
+	results = append(results, entities.CommandResult{Body: sftpCopyResult, Error: err})
 	if err != nil {
-		return nil, fmt.Errorf("file copy error %v", err)
+		return results, fmt.Errorf("file copy error %v", err)
 	}
-	results = append(results, sftpCopyResult)
 
 	// prepare sequence of commands to run on device
 	commands := []entities.Command{

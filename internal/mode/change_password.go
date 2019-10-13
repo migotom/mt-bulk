@@ -9,7 +9,7 @@ import (
 )
 
 // ChangePassword changes device's admin password.
-func ChangePassword(ctx context.Context, client clients.Client, job *entities.Job) ([]string, error) {
+func ChangePassword(ctx context.Context, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
 	newPassword, ok := job.Data["new_password"]
 	if !ok || newPassword == "" {
 		return nil, fmt.Errorf("missing or empty new password for change password operation")
@@ -31,7 +31,7 @@ func ChangePassword(ctx context.Context, client clients.Client, job *entities.Jo
 
 	results, err := ExecuteCommands(ctx, client, commands)
 	if err != nil {
-		return nil, fmt.Errorf("executing custom commands error %v", err)
+		return results, fmt.Errorf("executing custom commands error %v", err)
 	}
-	return results, nil
+	return results, err
 }

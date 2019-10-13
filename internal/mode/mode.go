@@ -11,6 +11,24 @@ import (
 	"github.com/migotom/mt-bulk/internal/entities"
 )
 
+// OperationModeFunc represents operation mode function.
+type OperationModeFunc func(context.Context, clients.Client, *entities.Job) ([]entities.CommandResult, error)
+
+const (
+	// ChangePasswordMode is change password operation name.
+	ChangePasswordMode = "ChangePassword"
+	// CustomSSHMode is custom SSH job operation name.
+	CustomSSHMode = "CustomSSH"
+	// CustomAPIMode is custom Mikrotik secure API job operation name.
+	CustomAPIMode = "CustomAPI"
+	// InitSecureAPIMode is initialize secure API job operation name.
+	InitSecureAPIMode = "InitSecureAPI"
+	// InitPublicKeySSHMode is initialize public key SSH authentication job operation name.
+	InitPublicKeySSHMode = "InitPublicKeySSH"
+	// CheckMTbulkVersionMode is check MT-bulk version job operation name.
+	CheckMTbulkVersionMode = "CheckMTbulkVersion"
+)
+
 // EstablishConnection tries to establish connection for provided host by specified client.
 // It tries to connect by retries number and list of passwords defined in client's configuration.
 func EstablishConnection(ctx context.Context, client clients.Client, host *entities.Host) (err error) {
@@ -24,6 +42,7 @@ func EstablishConnection(ctx context.Context, client clients.Client, host *entit
 
 	config := client.GetConfig()
 	host.SetDefaults(config.DefaultPort, config.DefaultUser, config.DefaultPassword)
+	// TODO add verification that remote device is mt-bulk comaptible (eg. Mikrotik SSH, Mikrotik API)
 	for retry := 0; retry < config.Retries; retry++ {
 		for idx, password := range host.GetPasswords() {
 
@@ -54,7 +73,7 @@ func EstablishConnection(ctx context.Context, client clients.Client, host *entit
 }
 
 // ExecuteCommands executes provided list of commands using specified client.
-func ExecuteCommands(ctx context.Context, d clients.Client, commands []entities.Command) ([]string, error) {
+func ExecuteCommands(ctx context.Context, d clients.Client, commands []entities.Command) ([]entities.CommandResult, error) {
 	allMatches := make(map[string]string)
 	run := func(c entities.Command, responseChan chan<- string, errChan chan<- error) {
 		defer close(responseChan)
@@ -71,6 +90,7 @@ func ExecuteCommands(ctx context.Context, d clients.Client, commands []entities.
 
 		result, err := d.RunCmd(c.Body, expect)
 		if err != nil {
+			responseChan <- result
 			errChan <- fmt.Errorf("command processing error: %s", err)
 			return
 		}
@@ -89,48 +109,40 @@ func ExecuteCommands(ctx context.Context, d clients.Client, commands []entities.
 		}
 	}
 
-	executed := make([]string, 0, len(commands))
+	var executeError error
+	executed := make([]entities.CommandResult, 0, len(commands))
+
 	for _, c := range commands {
 		errChan := make(chan error)
 		responseChan := make(chan string)
 
 		go run(c, responseChan, errChan)
 
+		commandResult := entities.CommandResult{Body: c.Body}
 	commandParseLoop:
 		for {
 			select {
 			case <-ctx.Done():
-				return executed, nil
+				return executed, errors.New("interrupted")
 			case <-time.After(30 * time.Second):
-				return executed, fmt.Errorf("ExecuteCommands timeouted")
+				return executed, fmt.Errorf("timeouted")
 			case err, ok := <-errChan:
-				if !ok {
-					break commandParseLoop
+				if ok {
+					executeError = fmt.Errorf("%v (%s)", err, c)
 				}
-				return executed, fmt.Errorf("%v (%s)", err, c)
 			case response, ok := <-responseChan:
 				if !ok {
 					break commandParseLoop
 				}
-				executed = append(executed, response)
+				commandResult.Responses = append(commandResult.Responses, response)
 			}
 		}
+		commandResult.Error = executeError
+		executed = append(executed, commandResult)
+
+		if executeError != nil {
+			break
+		}
 	}
-	return executed, nil
+	return executed, executeError
 }
-
-// OperationModeFunc represents operation mode function.
-type OperationModeFunc func(context.Context, clients.Client, *entities.Job) ([]string, error)
-
-const (
-	// ChangePasswordMode is change password operation name.
-	ChangePasswordMode = "ChangePassword"
-	// CustomSSHMode is custom SSH job operation name.
-	CustomSSHMode = "CustomSSH"
-	// CustomAPIMode is custom Mikrotik secure API job operation name.
-	CustomAPIMode = "CustomAPI"
-	// InitSecureAPIMode is initialize secure API job operation name.
-	InitSecureAPIMode = "InitSecureAPI"
-	// InitPublicKeySSHMode is initialize public key SSH authentication job operation name.
-	InitPublicKeySSHMode = "InitPublicKeySSH"
-)

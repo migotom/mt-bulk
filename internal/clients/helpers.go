@@ -10,7 +10,7 @@ import (
 
 func waitForExpected(reader io.Reader, expect *regexp.Regexp) (result string, err error) {
 	resultChan := make(chan string)
-	errorChan := make(chan struct{})
+	errorChan := make(chan error)
 
 	newLineRx := regexp.MustCompile("\r")
 
@@ -25,15 +25,15 @@ func waitForExpected(reader io.Reader, expect *regexp.Regexp) (result string, er
 			buf := make([]byte, 1024*10)
 			byteCount, err := reader.Read(buf)
 			if err != nil {
-				errorChan <- struct{}{}
+				errorChan <- err
 				return
 			}
-
 			s.WriteString(string(buf[:byteCount]))
 			parsedResponse := newLineRx.ReplaceAllString(s.String(), "")
+			resultChan <- parsedResponse
 
 			if expect.MatchString(parsedResponse) {
-				resultChan <- parsedResponse
+				errorChan <- nil
 				break
 			}
 		}
@@ -42,12 +42,10 @@ func waitForExpected(reader io.Reader, expect *regexp.Regexp) (result string, er
 	for {
 		select {
 		case result = <-resultChan:
-			return
-		case <-errorChan:
-			err = fmt.Errorf("expected result %s", expect.String())
+		case err = <-errorChan:
 			return
 		case <-time.After(3 * time.Second):
-			err = fmt.Errorf("timeout of waiting to expected result %s", expect.String())
+			err = fmt.Errorf("timeout on waiting to expected result: %s", expect.String())
 			return
 		}
 	}

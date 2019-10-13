@@ -14,13 +14,15 @@ func TestChangePassword(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Job           entities.Job
-		Expected      []string
+		Expected      []entities.CommandResult
 		ExpectedError error
 	}{
 		{
-			Name:     "OK",
-			Job:      entities.Job{Host: entities.Host{Password: "old"}, Data: map[string]string{"new_password": "secret"}},
-			Expected: []string{"/user/set =numbers=admin =password=secret"},
+			Name: "OK",
+			Job:  entities.Job{Host: entities.Host{Password: "old"}, Data: map[string]string{"new_password": "secret"}},
+			Expected: []entities.CommandResult{
+				entities.CommandResult{Body: "/user/set =numbers=admin =password=secret", Responses: []string{"/user/set =numbers=admin =password=secret"}},
+			},
 		},
 		{
 			Name:          "Wrong, missing new password",
@@ -40,7 +42,7 @@ func TestChangePassword(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(results, tc.Expected) {
-				t.Errorf("not expected commands %v", results)
+				t.Errorf("not expected commands:%v, expected:%v", results, tc.Expected)
 			}
 		})
 	}

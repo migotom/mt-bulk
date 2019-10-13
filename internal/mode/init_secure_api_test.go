@@ -14,21 +14,21 @@ func TestInitSecureAPI(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Job           entities.Job
-		Expected      []string
+		Expected      []entities.CommandResult
 		ExpectedError error
 	}{
 		{
 			Name: "OK",
 			Job:  entities.Job{Host: entities.Host{Password: "old"}, Data: map[string]string{"keys_directory": "certs/"}},
-			Expected: []string{
-				`/<mt-bulk>copy sftp://certs/device.crt mtbulkdevice.crt`,
-				`/<mt-bulk>copy sftp://certs/device.key mtbulkdevice.key`,
-				`/ip service set api-ssl certificate=none`,
-				`/certificate print detail`,
-				`/certificate remove %{c1}`,
-				`/certificate import file-name=mtbulkdevice.crt passphrase=""`,
-				`/certificate import file-name=mtbulkdevice.key passphrase=""`,
-				`/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`,
+			Expected: []entities.CommandResult{
+				entities.CommandResult{Body: `/<mt-bulk>copy sftp://certs/device.crt mtbulkdevice.crt`},
+				entities.CommandResult{Body: `/<mt-bulk>copy sftp://certs/device.key mtbulkdevice.key`},
+				entities.CommandResult{Body: `/ip service set api-ssl certificate=none`, Responses: []string{`/ip service set api-ssl certificate=none`}},
+				entities.CommandResult{Body: `/certificate print detail`, Responses: []string{`/certificate print detail`}},
+				entities.CommandResult{Body: `/certificate remove %{c1}`, Responses: []string{`/certificate remove %{c1}`}},
+				entities.CommandResult{Body: `/certificate import file-name=mtbulkdevice.crt passphrase=""`, Responses: []string{`/certificate import file-name=mtbulkdevice.crt passphrase=""`}},
+				entities.CommandResult{Body: `/certificate import file-name=mtbulkdevice.key passphrase=""`, Responses: []string{`/certificate import file-name=mtbulkdevice.key passphrase=""`}},
+				entities.CommandResult{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`, Responses: []string{`/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`}},
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func TestInitSecureAPI(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(results, tc.Expected) {
-				t.Errorf("not expected commands %v", results)
+				t.Errorf("\nnot expected: %v,\n    expected: %v", results, tc.Expected)
 			}
 		})
 	}

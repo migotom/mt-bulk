@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"sync"
 
@@ -63,16 +62,16 @@ func (p *WorkerPool) Get(host entities.Host) (worker *Worker) {
 
 // Worker processing given jobs by jobs channel and sending responses back to results channel.
 type Worker struct {
+	version         string
 	jobs            chan entities.Job
-	results         chan entities.Result
 	processingHosts []entities.Host
 }
 
 // NewWorker returns new worker.
-func NewWorker(jobsQueueSize int, results chan entities.Result) *Worker {
+func NewWorker(jobsQueueSize int, version string) *Worker {
 	return &Worker{
+		version: version,
 		jobs:    make(chan entities.Job, jobsQueueSize),
-		results: results,
 	}
 }
 
@@ -111,13 +110,17 @@ func (w *Worker) ProcessJobs(ctx context.Context, clientConfig clients.Clients) 
 			case mode.ChangePasswordMode:
 				client = clients.NewMikrotikAPIClient(clientConfig.MikrotikAPI)
 				handler = mode.ChangePassword
+			case mode.CheckMTbulkVersionMode:
+				handler = mode.CheckMTbulkVersion(w.version)
 			default:
-				w.results <- entities.Result{Host: job.Host, Job: job, Error: fmt.Errorf("invalid kind of job: %v", job)}
+				// TODO log this event
 				continue
 			}
 
-			responses, err := handler(ctx, client, &job)
-			w.results <- entities.Result{Host: job.Host, Job: job, Responses: responses, Error: err}
+			results, err := handler(ctx, client, &job)
+
+			job.Result <- entities.Result{Job: job, Results: results, Error: err}
+			close(job.Result)
 		}
 	}
 }

@@ -13,14 +13,14 @@ func TestCustom(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Job           entities.Job
-		Expected      []string
+		Expected      []entities.CommandResult
 		ExpectedError error
 	}{
 		{
 			Name: "OK",
 			Job:  entities.Job{Host: entities.Host{Password: "old"}, Commands: []entities.Command{entities.Command{Body: `/certificate print detail`}}},
-			Expected: []string{
-				`/certificate print detail`,
+			Expected: []entities.CommandResult{
+				entities.CommandResult{Body: `/certificate print detail`, Responses: []string{`/certificate print detail`}},
 			},
 		},
 	}

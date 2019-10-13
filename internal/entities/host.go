@@ -9,11 +9,11 @@ import (
 
 // Host represents single host instance with all data and credentials required to connect to.
 type Host struct {
-	ID       string
-	IP       string `toml:"ip" yaml:"ip"`
-	Port     string `toml:"port" yaml:"port"`
-	User     string `toml:"user" yaml:"user"`
-	Password string `toml:"password" yaml:"password"`
+	ID       string `json:"id,omitempty"`
+	IP       string `toml:"ip" yaml:"ip" json:"ip"`
+	Port     string `toml:"port" yaml:"port" json:"port"`
+	User     string `toml:"user" yaml:"user" json:"user"`
+	Password string `toml:"password" yaml:"password" json:"password,omitempty"`
 }
 
 // GetPasswords returns list of available passwords.
@@ -52,6 +52,7 @@ func (h *Host) Parse() error {
 			return fmt.Errorf("port invalid format: %s", list[1])
 		}
 		h.Port = list[1]
+		h.IP = list[0]
 	}
 
 	if ipaddr, err := net.ResolveIPAddr("ip", list[0]); err == nil {

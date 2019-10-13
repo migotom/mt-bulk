@@ -1,6 +1,7 @@
-package service
+package mode
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,25 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/migotom/mt-bulk/internal/clients"
+	"github.com/migotom/mt-bulk/internal/entities"
 )
+
+// CheckMTbulkVersionMode executes by client custom job.
+func CheckMTbulkVersion(version string) OperationModeFunc {
+	return func(ctx context.Context, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
+		if err := checkVersion(version); err != nil {
+			return []entities.CommandResult{
+				entities.CommandResult{
+					Body:  "/<mt-bulk>check version",
+					Error: err,
+				},
+			}, err
+		}
+		return nil, nil
+	}
+}
 
 func checkVersion(currentVersion string) error {
 	type release struct {

@@ -9,7 +9,7 @@ import (
 )
 
 // Custom executes by client custom job.
-func Custom(ctx context.Context, client clients.Client, job *entities.Job) ([]string, error) {
+func Custom(ctx context.Context, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
 	if err := EstablishConnection(ctx, client, &job.Host); err != nil {
 		return nil, err
 	}
@@ -17,7 +17,7 @@ func Custom(ctx context.Context, client clients.Client, job *entities.Job) ([]st
 
 	results, err := ExecuteCommands(ctx, client, job.Commands)
 	if err != nil {
-		return nil, fmt.Errorf("executing custom commands error %v", err)
+		return results, fmt.Errorf("executing custom commands error %v", err)
 	}
-	return results, nil
+	return results, err
 }

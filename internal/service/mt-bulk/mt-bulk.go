@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/migotom/mt-bulk/internal/entities"
+	"github.com/migotom/mt-bulk/internal/mode"
 	"github.com/migotom/mt-bulk/internal/service"
 )
 
@@ -14,7 +15,9 @@ import (
 type MTbulk struct {
 	jobTemplate entities.Job
 	jobsLoaders []entities.JobsLoaderFunc
+	jobDone     chan struct{}
 
+	Results chan entities.Result
 	Status  ApplicationStatus
 	Service *service.Service
 	Config
@@ -31,7 +34,9 @@ func NewMTbulk(arguments map[string]interface{}, version string) (MTbulk, error)
 		Config:      config,
 		jobsLoaders: jobsLoaders,
 		jobTemplate: jobTemplate,
+		jobDone:     make(chan struct{}),
 		Service:     service.NewService(config.Service),
+		Results:     make(chan entities.Result),
 	}, nil
 }
 
@@ -39,27 +44,63 @@ func NewMTbulk(arguments map[string]interface{}, version string) (MTbulk, error)
 func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 	defer close(mtbulk.Service.Jobs)
 
-	mtbulk.jobTemplate.Result = mtbulk.Service.Results
 	jobsToProcess := make([]entities.Job, 0, 256)
-
+	if !mtbulk.Config.Service.SkipVersionCheck {
+		jobsToProcess = append(jobsToProcess, entities.Job{
+			Kind: mode.CheckMTbulkVersionMode,
+		})
+	}
 	for _, jobsLoader := range mtbulk.jobsLoaders {
 		jobs, err := jobsLoader(ctx, mtbulk.jobTemplate)
 		if err != nil {
-			mtbulk.Service.Results <- entities.Result{Error: err}
-			return
+			mtbulk.Results <- entities.Result{Error: err}
+			break
 		}
 		jobsToProcess = append(jobsToProcess, jobs...)
 	}
 
 	for _, job := range jobsToProcess {
+		job.Result = make(chan entities.Result)
+
+		go func(results chan entities.Result) {
+			select {
+			case <-ctx.Done():
+			case result := <-results:
+				mtbulk.Results <- result
+				mtbulk.jobDone <- struct{}{}
+			}
+		}(job.Result)
+
 		select {
 		case <-ctx.Done():
-			mtbulk.Service.Results <- entities.Result{Error: ctx.Err()}
-			return
+			mtbulk.Results <- entities.Result{Error: ctx.Err()}
+			break
 		case mtbulk.Service.Jobs <- job:
 		}
+
 	}
 
+	go func(jobsToProcess int) {
+		defer close(mtbulk.Results)
+		defer close(mtbulk.jobDone)
+
+		if jobsToProcess == 0 {
+			return
+		}
+
+		jobsProcessed := 0
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-mtbulk.jobDone:
+				jobsProcessed++
+				if jobsProcessed == jobsToProcess {
+					return
+				}
+			}
+		}
+	}(len(jobsToProcess))
 }
 
 // ResponseCollector collects and prints out results of processed jobs.
@@ -70,22 +111,23 @@ collectorLooop:
 	for {
 		select {
 		case <-ctx.Done():
-
 			break collectorLooop
-		case result, ok := <-mtbulk.Service.Results:
+		case result, ok := <-mtbulk.Results:
 			if !ok {
 				break collectorLooop
 			}
 			if result.Error != nil {
-				hostsErrors[result.Host] = append(hostsErrors[result.Host], result.Error)
+				hostsErrors[result.Job.Host] = append(hostsErrors[result.Job.Host], result.Error)
 			}
 
-			if mtbulk.Verbose {
-				fmt.Printf("%s > /// job: \"%s\"\n", result.Host, result.Job.Kind)
-				for _, response := range result.Responses {
-					for _, line := range strings.Split(response, "\n") {
-						if line != "" {
-							fmt.Printf("%s > %s\n", result.Host, line)
+			if (mtbulk.Verbose && result.Job.Host != entities.Host{}) {
+				fmt.Printf("%s > /// job: \"%s\"\n", result.Job.Host, result.Job.Kind)
+				for _, commandResult := range result.Results {
+					for _, response := range commandResult.Responses {
+						for _, line := range strings.Split(response, "\n") {
+							if line != "" {
+								fmt.Printf("%s > %s\n", result.Job.Host, line)
+							}
 						}
 					}
 				}
