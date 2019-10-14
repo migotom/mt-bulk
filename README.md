@@ -1,10 +1,23 @@
 # mt-bulk
 
-MT-bulk asynchronously and parallel sends defined commands or jobs using Mikrotik SSL API or SSH to list of devices provided by command line, loaded from file or database.
+MT-bulk is a toolset to help manage multiple Mikrotik/RouterOS devices by sending predefined or custom commands using Mikrotik SSL API, SSH and SFTP.  
 
 Version 2.x introduces a major breaking changes, please read [Version 2 breaking changes](#Version-2-breaking-changes) section of this readme before upgrading.
 
+MT-bulk toolset contains two tools:
+
+## Mt-bulk
+
+CLI tool that process devices list and commands provided by command line arguments, loaded from file or external SQL database. Commands are distributed to several internal workers and processed parallel.
+
+### MT-bulk REST API gateway
+
+REST API daemon that process HTTPS POST requests with specified pair of commands and hosts to asynchronously execute on.
+
+
 ## Options
+
+### MT-bulk
 
 ```
 MT-bulk.
@@ -28,11 +41,28 @@ Options:
   <hosts>...               List of space separated hosts in format IP[:PORT]
 ```
 
+### MT-bulk REST API gateway
+
+```
+MT-bulk REST API gateway.
+
+Usage:
+  mt-bulk-rest-gw [options]
+  mt-bulk-rest-gw gen-https-certs [options]
+  mt-bulk-rest-gw -h | --help
+  mt-bulk-rest-gw --version
+
+Options:
+  -C <config-file>         Use configuration file
+```
+
 ## Download
 
-Current and historical releases of MT-bulk https://github.com/migotom/mt-bulk/releases
+Current and historical releases of MT-bulk and MT-bulk-rest-api at https://github.com/migotom/mt-bulk/releases
 
 ## Examples
+
+### MT-bulk
 
 ```
 mt-bulk gen-api-certs -C mtbulk.cfg
@@ -48,6 +78,18 @@ Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (in this example each device
 mt-bulk change-password -w 16 -C mtbulk.cfg --new=supersecret --user=admin --source-db
 ```
 Change admin's password to *supersecret* on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
+
+### MT-bulk REST API gateway
+
+```
+mt-bulk-rest-api gen-https-certs -C mtbulk-rest-api.cfg
+```
+Generates self signed SSL certificates and starts REST API daemon.
+
+```
+mt-bulk-rest-api -C mtbulk-rest-api.cfg
+```
+Stars REST API daemon
 
 
 ## Operations
@@ -80,6 +122,8 @@ This operation may be proceeded once, MT-bulk will use certificates from [servic
 
 Generate and store private and public SSH RSA keys that may be used to establish secure connection using SSH without password. 
 This operation may be proceeded once, MT-bulk will use keys from [service.clients.ssh.keys_store] to handle connections with each device.
+
+Important note. Password will not work once public key authentication enabled on RouterOS.
 
 ### init-secure-api
 
