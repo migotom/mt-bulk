@@ -6,14 +6,15 @@ Version 2.x introduces a major breaking changes, please read [Version 2 breaking
 
 MT-bulk toolset contains two tools:
 
-## Mt-bulk
+### Mt-bulk
 
 CLI tool that process devices list and commands provided by command line arguments, loaded from file or external SQL database. Commands are distributed to several internal workers and processed parallel.
 
 ### MT-bulk REST API gateway
 
-REST API daemon that process HTTPS POST requests with specified pair of commands and hosts to asynchronously execute on.
+REST API daemon that process HTTPS POST requests with specified pair of commands and hosts to asynchronously execute on. 
 
+Detaled documentation of [API specification](#REST-API).
 
 ## Options
 
@@ -175,6 +176,37 @@ Command's options:
 - match_prefix: for each match MT-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
 
 More examples at `mt-bulk.example.cfg` and `example-commands\` folder.
+
+## REST API 
+
+- POST https://host/authenticate
+
+Request example:
+```
+{
+	"key": "abc"
+}
+```
+
+Request new authentication token by specifing one of keys stored in mt-bulk-rest-api configuration ([authenticate.key] section).
+
+- POST https://host/job
+
+Request example:
+```
+{
+	"host": {
+		"ip": "10.0.0.1",
+		"user": "admin",
+		"password": "secret"
+	},
+	"kind": "CustomSSH",
+	"commands": [ { "body": "/user print", "expect": "LAST-LOGGED-IN" }]
+}
+```
+
+Request new job to specified RouterOS host (`Authorization` header must be provided and contain authentication token).
+
 
 ## Configuration
 
