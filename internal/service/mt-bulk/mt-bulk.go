@@ -47,6 +47,7 @@ func NewMTbulk(sugar *zap.SugaredLogger, arguments map[string]interface{}, versi
 // LoadJobs loads jobs to service workers.
 func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 	defer close(mtbulk.Service.Jobs)
+	defer close(mtbulk.Results)
 
 	jobsToProcess := make([]entities.Job, 0, 256)
 	if !mtbulk.Config.Service.SkipVersionCheck {
@@ -63,46 +64,27 @@ func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 		jobsToProcess = append(jobsToProcess, jobs...)
 	}
 
+	wgJobs := new(sync.WaitGroup)
 	for _, job := range jobsToProcess {
-		job.Result = make(chan entities.Result)
+		wgJobs.Add(1)
+		go func(job entities.Job) {
+			defer wgJobs.Done()
 
-		go func(results chan entities.Result) {
+			job.Result = make(chan entities.Result)
+
 			select {
 			case <-ctx.Done():
-			case result := <-results:
+			case mtbulk.Service.Jobs <- job:
+			}
+
+			select {
+			case <-ctx.Done():
+			case result := <-job.Result:
 				mtbulk.Results <- result
-				mtbulk.jobDone <- struct{}{}
 			}
-		}(job.Result)
-
-		select {
-		case <-ctx.Done():
-			break
-		case mtbulk.Service.Jobs <- job:
-		}
+		}(job)
 	}
-
-	go func(ctx context.Context, jobsToProcess int) {
-		defer close(mtbulk.Results)
-		defer close(mtbulk.jobDone)
-
-		if jobsToProcess == 0 {
-			return
-		}
-
-		jobsProcessed := 0
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-mtbulk.jobDone:
-				jobsProcessed++
-				if jobsProcessed == jobsToProcess {
-					return
-				}
-			}
-		}
-	}(ctx, len(jobsToProcess))
+	wgJobs.Wait()
 }
 
 // ResponseCollector collects and prints out results of processed jobs.

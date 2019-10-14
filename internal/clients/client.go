@@ -41,6 +41,8 @@ func EstablishConnection(ctx context.Context, sugar *zap.SugaredLogger, client C
 	job.Host.SetDefaults(config.DefaultPort, config.DefaultUser, config.DefaultPassword)
 	// TODO add verification that remote device is mt-bulk comaptible (eg. Mikrotik SSH, Mikrotik API)
 	for retry := 0; retry < config.Retries; retry++ {
+		time.Sleep(time.Duration(retry*retry) * time.Millisecond * 100)
+
 		for idx, password := range job.Host.GetPasswords() {
 
 			select {
