@@ -72,7 +72,11 @@ func (w *Worker) ProcessJobs(ctx context.Context, clientConfig clients.Clients) 
 
 			results, err := handler(ctx, w.sugar, client, &job)
 
-			job.Result <- entities.Result{Job: job, Results: results, Error: err}
+			select {
+			case <-ctx.Done():
+				return
+			case job.Result <- entities.Result{Job: job, Results: results, Error: err}:
+			}
 			close(job.Result)
 		}
 	}

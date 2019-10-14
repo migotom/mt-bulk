@@ -49,15 +49,23 @@ func (service *Service) Listen(ctx context.Context) {
 
 		// jobs dispatcher
 		for {
+			var job entities.Job
+			var ok bool
+
 			select {
 			case <-ctx.Done():
 				return
-			case job, ok := <-service.Jobs:
+			case job, ok = <-service.Jobs:
 				if !ok {
 					return
 				}
-				w := workerPool.Get(job.Host)
-				w.jobs <- job
+			}
+
+			w := workerPool.Get(job.Host)
+			select {
+			case <-ctx.Done():
+				return
+			case w.jobs <- job:
 			}
 		}
 	}()

@@ -77,14 +77,12 @@ func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 
 		select {
 		case <-ctx.Done():
-			mtbulk.Results <- entities.Result{Error: ctx.Err()}
 			break
 		case mtbulk.Service.Jobs <- job:
 		}
-
 	}
 
-	go func(jobsToProcess int) {
+	go func(ctx context.Context, jobsToProcess int) {
 		defer close(mtbulk.Results)
 		defer close(mtbulk.jobDone)
 
@@ -104,7 +102,7 @@ func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 				}
 			}
 		}
-	}(len(jobsToProcess))
+	}(ctx, len(jobsToProcess))
 }
 
 // ResponseCollector collects and prints out results of processed jobs.
