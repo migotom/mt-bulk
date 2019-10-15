@@ -50,6 +50,7 @@ func (p *WorkerPool) Get(host entities.Host) (worker *Worker) {
 		}
 	}
 
+	p.current++
 	if p.current >= len(p.pool) {
 		p.current = p.current % len(p.pool)
 	}
