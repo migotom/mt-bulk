@@ -11,13 +11,17 @@ import (
 )
 
 // InitSecureAPI initializes Mikrotik secure API using SSH client.
-func InitSecureAPI(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) (results []entities.CommandResult, err error) {
+func InitSecureAPI(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
 	certificatesDirectory, ok := job.Data["keys_directory"]
 	if !ok || certificatesDirectory == "" {
 		return nil, fmt.Errorf("keys_directory not specified")
 	}
 
-	if err := clients.EstablishConnection(ctx, sugar, client, job); err != nil {
+	results := make([]entities.CommandResult, 0, 9)
+
+	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
+	results = append(results, establishResult)
+	if err != nil {
 		return nil, err
 	}
 	defer client.Close()
@@ -52,11 +56,11 @@ func InitSecureAPI(ctx context.Context, sugar *zap.SugaredLogger, client clients
 		{Body: `/ip service set api-ssl disabled=no certificate=mtbulkdevice.crt`},
 	}
 
-	sshResults, err := clients.ExecuteCommands(ctx, client, commands)
+	commandResults, err := clients.ExecuteCommands(ctx, client, commands)
 	if err != nil {
 		err = fmt.Errorf("executing InitSecureAPI commands error %v", err)
 	}
-	results = append(results, sshResults...)
+	results = append(results, commandResults...)
 
 	return results, err
 }

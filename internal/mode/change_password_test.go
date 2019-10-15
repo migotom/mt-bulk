@@ -23,6 +23,7 @@ func TestChangePassword(t *testing.T) {
 			Name: "OK",
 			Job:  entities.Job{Host: entities.Host{Password: "old"}, Data: map[string]string{"new_password": "secret"}},
 			Expected: []entities.CommandResult{
+				entities.CommandResult{Body: "/<mt-bulk>establish connection", Responses: []string{"/<mt-bulk>establish connection", " --> attempt #0, password #0, job #"}},
 				entities.CommandResult{Body: "/user/set =numbers=admin =password=secret", Responses: []string{"/user/set =numbers=admin =password=secret"}},
 			},
 		},

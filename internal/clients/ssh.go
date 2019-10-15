@@ -58,7 +58,7 @@ func (ssh *SSH) Connect(ctx context.Context, IP, Port, User, Password string) (e
 
 	sshConfig.SetDefaults()
 	sshConfig.Ciphers = append(sshConfig.Ciphers, "aes128-cbc", "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc", "diffie-hellman-group-exchange-sha256")
-	sshConfig.KeyExchanges = append(sshConfig.KeyExchanges, "diffie-hellman-group-exchange-sha256")
+	sshConfig.KeyExchanges = append(sshConfig.KeyExchanges, "diffie-hellman-group-exchange-sha256", "diffie-hellman-group-exchange-sha1", "diffie-hellman-group1-sha1")
 	clientConfig := &cryptossh.ClientConfig{
 		Config:          sshConfig,
 		Timeout:         30 * time.Second,
@@ -124,21 +124,30 @@ func (ssh *SSH) CopyFile(ctx context.Context, local, remote string) (result stri
 }
 
 // Close SSH client session.
-func (ssh *SSH) Close() error {
+func (ssh *SSH) Close() {
+	if ssh.session == nil {
+		return
+	}
+	defer ssh.session.Close()
+
 	if ssh.client == nil {
-		return nil
+		return
 	}
 	defer ssh.client.Close()
-	defer func() {
-		ssh.session.Close()
-		ssh.session = nil
-	}()
 
 	ssh.stdinBuf.Write([]byte("/quit\r"))
-	if err := ssh.session.Wait(); err != nil {
-		return fmt.Errorf("remote command did not exit cleanly: %v", err)
+
+	wait := make(chan struct{})
+	go func(wait chan struct{}) {
+		ssh.session.Wait()
+		wait <- struct{}{}
+	}(wait)
+
+	select {
+	case <-time.After(1 * time.Second):
+	case <-wait:
 	}
-	return nil
+	return
 }
 
 // RunCmd execues given command on remote device, optionally can compare execution result with provided expect regexp.

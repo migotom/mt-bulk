@@ -11,12 +11,17 @@ import (
 
 // Custom executes by client custom job.
 func Custom(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
-	if err := clients.EstablishConnection(ctx, sugar, client, job); err != nil {
-		return nil, err
+	results := make([]entities.CommandResult, 0, 8)
+
+	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
+	results = append(results, establishResult)
+	if err != nil {
+		return results, err
 	}
 	defer client.Close()
 
-	results, err := clients.ExecuteCommands(ctx, client, job.Commands)
+	commandResults, err := clients.ExecuteCommands(ctx, client, job.Commands)
+	results = append(results, commandResults...)
 	if err != nil {
 		return results, fmt.Errorf("executing custom commands error %v", err)
 	}

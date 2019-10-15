@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rs/xid"
 	"go.uber.org/zap"
 
 	"github.com/migotom/mt-bulk/internal/entities"
@@ -70,6 +71,7 @@ func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 		go func(job entities.Job) {
 			defer wgJobs.Done()
 
+			job.ID = xid.New().String()
 			job.Result = make(chan entities.Result)
 
 			select {

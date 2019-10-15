@@ -18,7 +18,7 @@ type Client interface {
 
 	RunCmd(string, *regexp.Regexp) (string, error)
 	Connect(ctx context.Context, IP, Port, User, Password string) error
-	Close() error
+	Close()
 }
 
 // Copier interface for copy files capable clients.
@@ -28,7 +28,7 @@ type Copier interface {
 
 // EstablishConnection tries to establish connection for provided host by specified client.
 // It tries to connect by retries number and list of passwords defined in client's configuration.
-func EstablishConnection(ctx context.Context, sugar *zap.SugaredLogger, client Client, job *entities.Job) (err error) {
+func EstablishConnection(ctx context.Context, sugar *zap.SugaredLogger, client Client, job *entities.Job) (result entities.CommandResult, err error) {
 	err = errors.New("unexpected error during connection establishing")
 
 	defer func() {
@@ -39,7 +39,8 @@ func EstablishConnection(ctx context.Context, sugar *zap.SugaredLogger, client C
 
 	config := client.GetConfig()
 	job.Host.SetDefaults(config.DefaultPort, config.DefaultUser, config.DefaultPassword)
-	// TODO add verification that remote device is mt-bulk comaptible (eg. Mikrotik SSH, Mikrotik API)
+
+	result = entities.CommandResult{Body: "/<mt-bulk>establish connection", Responses: []string{"/<mt-bulk>establish connection"}}
 	for retry := 0; retry < config.Retries; retry++ {
 		time.Sleep(time.Duration(retry*retry) * time.Millisecond * 100)
 
@@ -47,12 +48,12 @@ func EstablishConnection(ctx context.Context, sugar *zap.SugaredLogger, client C
 
 			select {
 			case <-ctx.Done():
-				return errors.New("context done")
+				return entities.CommandResult{}, errors.New("context done")
 
 			default:
-				sugar.Infow("establishing connection", "host", job.Host, "password id", idx, "retry", retry, "id", job.ID)
-
 				err = client.Connect(ctx, job.Host.IP, job.Host.Port, job.Host.User, password)
+				result.Error = err
+				result.Responses = append(result.Responses, fmt.Sprintf(" --> attempt #%d, password #%d, job #%s", retry, idx, job.ID))
 				if err != nil {
 					if _, ok := err.(ErrorWrongPassword); ok {
 						continue

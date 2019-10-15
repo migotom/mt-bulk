@@ -22,8 +22,12 @@ func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client client
 		user = "admin"
 	}
 
-	if err := clients.EstablishConnection(ctx, sugar, client, job); err != nil {
-		return nil, err
+	results := make([]entities.CommandResult, 0, 2)
+
+	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
+	results = append(results, establishResult)
+	if err != nil {
+		return results, err
 	}
 	defer client.Close()
 
@@ -31,7 +35,8 @@ func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client client
 		{Body: fmt.Sprintf("/user/set =numbers=%s =password=%s", user, newPassword), Expect: "!done"},
 	}
 
-	results, err := clients.ExecuteCommands(ctx, client, commands)
+	commandResults, err := clients.ExecuteCommands(ctx, client, commands)
+	results = append(results, commandResults...)
 	if err != nil {
 		return results, fmt.Errorf("executing custom commands error %v", err)
 	}

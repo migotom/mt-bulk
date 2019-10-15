@@ -22,6 +22,7 @@ func TestInitSecureAPI(t *testing.T) {
 			Name: "OK",
 			Job:  entities.Job{Host: entities.Host{Password: "old"}, Data: map[string]string{"keys_directory": "certs/"}},
 			Expected: []entities.CommandResult{
+				entities.CommandResult{Body: "/<mt-bulk>establish connection", Responses: []string{"/<mt-bulk>establish connection", " --> attempt #0, password #0, job #"}},
 				entities.CommandResult{Body: `/<mt-bulk>copy sftp://certs/device.crt mtbulkdevice.crt`},
 				entities.CommandResult{Body: `/<mt-bulk>copy sftp://certs/device.key mtbulkdevice.key`},
 				entities.CommandResult{Body: `/ip service set api-ssl certificate=none`, Responses: []string{`/ip service set api-ssl certificate=none`}},
