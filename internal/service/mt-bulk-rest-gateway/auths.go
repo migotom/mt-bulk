@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/migotom/mt-bulk/internal/entities"
@@ -40,7 +41,7 @@ func (mtbulk *MTbulkRESTGateway) AuthenticateToken(ctx context.Context) http.Han
 		for _, authrole := range mtbulk.Config.Authenticate {
 			if authrole.Key == auth.Key {
 				claims.AllowedHostPatterns = authrole.AllowedHostPatterns
-
+				claims.ExpiresAt = time.Now().Add(time.Duration(1) * time.Hour).Unix()
 				token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(mtbulk.Config.TokenSecret))
 				if err != nil {
 					http.Error(w, err.Error(), 500)
