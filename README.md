@@ -61,164 +61,68 @@ Options:
 
 Current and historical releases of MT-bulk and MT-bulk-rest-api at https://github.com/migotom/mt-bulk/releases
 
+## Operations
+
+List of possible operations to execute by CLI and REST API:
+
+* [Generate Mikrotik API SSL certificate](./docs/operations.md#Generate-Mikrotik-API-SSL-certificates)
+* [Generate SSH RSA Private/Public keys](./docs/operations.md#Generate-SSH-RSA-Private/Public-keys)
+* [Initialize device to use Mikrotik SSL API](./docs/operations.md#Initialize-device-to-use-Mikrotik-SSL-API)
+* [Initialize device to use Public key SSH authentication](./docs/operations.md#Initialize-device-to-use-Public-key-SSH-authentication)
+* [Change user's password](./docs/operations.md#Change-user's-password)
+* [Execute sequence of custom commands](./docs/operations.md#Execute-sequence-of-custom-commands)
+
 ## Examples
 
 ### MT-bulk
 
+```bash
+mt-bulk gen-api-certs -C examples/configurations/mt-bulk.example.yml
 ```
-mt-bulk gen-api-certs -C mtbulk.cfg
-```
+
 Create new CA, host and device certificates.
 
+```bash
+mt-bulk init-secure-api -C examples/configurations/mt-bulk.example.yml 192.168.1.2 192.168.1.3:222 192.168.1.4:6654
 ```
-mt-bulk init-secure-api -C mtbulk.cfg 192.168.1.2 192.168.1.3:222 192.168.1.4:6654
-```
+
 Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (in this example each device has running SSH on different port) with user, SSL API and certificates pointed by mtbulk.cfg (section [service.clients.mikrotik_api.keys_store]).
 
+```bash
+mt-bulk change-password -w 16 -C examples/configurations/mt-bulk.example.yml --new=supersecret --user=admin --source-db
 ```
-mt-bulk change-password -w 16 -C mtbulk.cfg --new=supersecret --user=admin --source-db
-```
-Change admin's password to *supersecret* on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
+
+Change admin's password to *supersecret* for admin user on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
 
 ### MT-bulk REST API gateway
 
+```bash
+mt-bulk-rest-api gen-https-certs -C examples/configurations/mt-bulk-rest-api.example.yml
 ```
-mt-bulk-rest-api gen-https-certs -C mtbulk-rest-api.cfg
-```
+
 Generates self signed SSL certificates and starts REST API daemon.
 
+```bash
+mt-bulk-rest-api -C examples/configurations/mt-bulk-rest-api.example.yml
 ```
-mt-bulk-rest-api -C mtbulk-rest-api.cfg
-```
+
 Stars REST API daemon
-
-
-## Operations
-
-List of possible operations.
-
-Syntax:
-```
-mt-bulk <operation-name> [additional parameters]
-```
-
-MT-bulk while connecting to devices is using SSH public key or list of passwords provided in configuration file, sections: [service.clients.ssh] and [service.clients.mikrotik_api], passwords are comma separated.
-
-e.g.
-```
-[service]
-[service.clients.ssh]
-port = "22"
-password = "most_common_secret,alternative_secret,old_secret"
-user = "admin"
-keys_store  = "keys/ssh"
-```
-
-### gen-api-certs
-
-Generate and store device and host certificates required to establish secure connection using Mikrotik API. 
-This operation may be proceeded once, MT-bulk will use certificates from [service.clients.mikrotik_api.keys_store] to handle connections with each device.
-
-### gen-ssh-keys
-
-Generate and store private and public SSH RSA keys that may be used to establish secure connection using SSH without password. 
-This operation may be proceeded once, MT-bulk will use keys from [service.clients.ssh.keys_store] to handle connections with each device.
-
-Important note. Password will not work once public key authentication enabled on RouterOS.
-
-### init-secure-api
-
-Initialize Mikrotik device to use SSL API with MT-bulk. Operation uploads to device certificate and enables api-ssl with given certificate.
-
-### init-publickey-ssh
-
-Initialize Mikrotik device to use SSH public key to authenticate with MT-bulk. Operation uploads to device public key and enables it for given user.
-
-### change-password
-
-Change password to given new one with option `--new=<newpass>` and optionally `--user=<user>`
-Important note: operation require SSL API already initialized.
-
-### custom-api and custom-ssh
-
-Send sequence of commands defined in configuration file:
-
-Example:
-```
-[[custom-ssh.command]]
-body = "/certificate print detail"
-sleep_ms = 1000
-match_prefix = "c"
-match = '(?m)^\s+(\d+).*mtbulkdevice'
-[[custom-ssh.command]]
-body = "/certificate remove %{c1}"
-sleep_ms = 100
-[[custom-ssh.command]]
-body = "/system upgrade upgrade-package-source add address=10.0.0.1 user=test"
-expect = "password:"
-[[custom-ssh.command]]
-body = "my_password"
-```
-
-Sequences may be also defined in separate files and provided to MT-bulk by `--commands-file=<file name>`:
-
-Example SSH command:
-```
-[[command]]
-body = "/user print"
-```
-
-Command's options:
-- body: command with parameters, allowed to use regex matches in format %{[prefix][number of numbered capturing group]}
-- sleep_ms: wait given time duration after executing command, required by some commands (e.g. `/system upgrade refresh`)
-- expect: regexp used to verify that command's response match expected value
-- match: regexp used to search value in command's output, using Go syntax https://github.com/google/re2/wiki/Syntax 
-- match_prefix: for each match MT-bulk builds matcher using match_prefix and numbered capturing group, eg. %{prefix0}, %{prefix1} ...
-
-More examples at `mt-bulk.example.cfg` and `example-commands\` folder.
-
-## REST API 
-
-- POST https://host/authenticate
-
-Request example:
-```
-{
-	"key": "abc"
-}
-```
-
-Request new authentication token by specifing one of keys stored in mt-bulk-rest-api configuration ([authenticate.key] section).
-
-- POST https://host/job
-
-Request example:
-```
-{
-	"host": {
-		"ip": "10.0.0.1",
-		"user": "admin",
-		"password": "secret"
-	},
-	"kind": "CustomSSH",
-	"commands": [ { "body": "/user print", "expect": "LAST-LOGGED-IN" }]
-}
-```
-
-Request new job to specified RouterOS host (`Authorization` header must be provided and contain authentication token).
-
 
 ## Configuration
 
 ### Format
 
-Configuration file is written in TOML format (https://github.com/toml-lang/toml)
+MT-bulk supports two formats of configuration files:
+* TOML format (https://github.com/toml-lang/toml)
+* YAML format (https://yaml.org/spec/)
 
-### Loading sequence 
+Defaults since version 2.x is YAML.
+
+### Configurations loading sequence 
 
 - Application defaults
-- System (`/etc/mt-bulk/config.cfg`, `/Library/Application Support/MT-bulk/config.cfg`)
-- Home (`~/.mt-bulk.cfg`, `~/Library/Application Support/Uping/config.cfg`)
+- System (`/etc/mt-bulk/config.yml`, `/Library/Application Support/MT-bulk/config.yml`)
+- Home (`~/.mt-bulk.yml`, `~/Library/Application Support/Uping/config.yml`)
 - Command line `-C` option
 
 ### Hosts
