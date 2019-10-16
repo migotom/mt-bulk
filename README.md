@@ -109,7 +109,8 @@ Stars REST API daemon
 
 #### Endpoints
 
-* Authenticate and obtain auth token. `"key"` is one of access keys defined in configuration [`authenticate.key`], each `"key"` can have list of regexp rules defining list of allowed device IP addresses to use in requests.
+* https://localhost:8080/authenticate \
+Authenticate and obtain auth token. `"key"` is one of access keys defined in configuration [`authenticate.key`], each `"key"` can have list of regexp rules defining list of allowed device IP addresses to use in requests.
 
 ```json
 {
@@ -117,7 +118,8 @@ Stars REST API daemon
 }
 ```
 
-* MT-bulk API request. Run and execute specified job with optional additional commands on specified host. Each request must have valid token as `Authorization` header field. [List of possible operations](./docs/operations.md)
+* https://localhost:8080/job \
+MT-bulk API request. Run and execute specified job with optional additional commands on specified host. Each request must have valid token as `Authorization` header field. [List of possible operations](./docs/operations.md)
 
 ```json
 {
