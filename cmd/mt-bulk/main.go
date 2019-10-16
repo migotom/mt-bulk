@@ -1,20 +1,25 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"sync"
 
 	docopt "github.com/docopt/docopt-go"
-	mtbulk "github.com/migotom/mt-bulk/internal/mt-bulk"
-	"github.com/migotom/mt-bulk/internal/schema"
+	mtbulk "github.com/migotom/mt-bulk/internal/service/mt-bulk"
+	"go.uber.org/zap"
 )
 
 var usage = `MT-bulk.
 
 Usage:
-  mt-bulk gen-certs [options]
+  mt-bulk gen-api-certs [options]
+  mt-bulk gen-ssh-keys [options]
   mt-bulk init-secure-api [options] [<hosts>...]
-  mt-bulk change-password (--new=<newpass>) [options] [<hosts>...]  
+  mt-bulk init-publickey-ssh [options] [<hosts>...]
+  mt-bulk change-password (--new=<newpass>) [--user=<user>] [options] [<hosts>...]  
   mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk -h | --help
@@ -22,28 +27,61 @@ Usage:
 
 Options:
   -C <config-file>         Use configuration file, e.g. certs locations, ports, commands sequences, custom commands, etc...
-  -s                       Be quiet and don't print commands and commands results to standard output
-  -w <workers>             Number of parallel connections to run (default: 4)
-  --skip-version-check     Skip checking for new version
-  --skip-summary           Skip errors summary
-  --exit-on-error          In case of any error stop executing commands
   --source-db              Load hosts using database configured by -C <config-file>
   --source-file=<file-in>  Load hosts from file <file-in>
 `
 
-const version = "1.6.2"
+var version string
 
 func main() {
-	arguments, _ := docopt.ParseArgs(usage, os.Args[1:], version)
-	//	fmt.Println(arguments)
-
-	appConfig := schema.GeneralConfig{Version: version}
-
-	hostsLoaders, _, err := configParser(arguments, &appConfig)
+	logger, err := zap.NewProduction()
 	if err != nil {
-		log.Fatalf("[Fatal error] Config parser: %s\n", err)
+		log.Fatalf("Could not initialize logger: %s\n", err)
+	}
+	sugar := logger.Sugar()
+	defer sugar.Sync()
+
+	arguments, _ := docopt.ParseArgs(usage, os.Args[1:], version)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mtbulk, err := mtbulk.NewMTbulk(sugar, arguments, version)
+	if err != nil {
+		log.Fatalf("Configuration parser error: %s\n", err)
 	}
 
-	mtbulk := mtbulk.NewMTBulk(&appConfig, hostsLoaders)
-	os.Exit(mtbulk.Run())
+	wg := new(sync.WaitGroup)
+
+	// gracefull exit
+	go func() {
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt)
+
+		sig := <-signals
+		log.Printf("Interrupted by signal: %v\n", sig)
+
+		cancel()
+	}()
+
+	// load jobs and hosts
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		mtbulk.LoadJobs(ctx)
+	}()
+
+	// collect and present responses
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		mtbulk.ResponseCollector(ctx)
+	}()
+
+	// run workers
+	mtbulk.Listen(ctx)
+
+	wg.Wait()
+	os.Exit(mtbulk.Status.Get())
 }

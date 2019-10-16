@@ -1,0 +1,46 @@
+version = 2
+verbose = true
+skip_summary = false
+
+[service]
+workers = 4
+skip_version_check = false
+
+    [service.clients.ssh]
+    verify_check_sleep_ms = 1000
+    retries = 3
+    port = "22"
+    password = "new_secret,old_secret"
+    user = "admin"
+    keys_store  = "keys/ssh"
+        [service.clients.ssh.pty]
+        width = 160
+        height = 200    
+
+    [service.clients.mikrotik_api]
+    verify_check_sleep_ms = 500
+    retries = 3
+    port = "8729"
+    password = "new_secret,old_secret"
+    user = "admin"
+    keys_store  = "keys/api"
+    
+[db]
+driver = "postgres"
+params = "postgres://user:pass@host/db"
+id_server = 1
+    [db.queries]
+    get_devices =  "SELECT id, ip FROM devices WHERE id_server = $1"
+
+# some example custom commands
+
+# commands to run with secure API
+[[custom-api.command]]
+body = "/interface/print"
+sleep_ms = 1000
+[[custom-api.command]]
+body = "/user/print"
+
+# commands to run with SSH
+[[custom-ssh.command]]
+body = "/user print"

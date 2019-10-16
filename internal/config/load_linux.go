@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 )
 
-const configHome = ".mt-bulk.cfg"
-const configSys = "config.cfg"
+const configHome = ".mt-bulk.yml"
+const configSys = "config.yml"
 
 const etc = "/etc/mt-bulk/"
 

@@ -5,48 +5,40 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/migotom/mt-bulk/internal/schema"
-	"github.com/migotom/mt-bulk/internal/service/mocks"
+	"github.com/migotom/mt-bulk/internal/clients/mocks"
+	"github.com/migotom/mt-bulk/internal/entities"
+	"go.uber.org/zap"
 )
 
-func TestCustomAPI(t *testing.T) {
-	MTAPI := mocks.Service{}
-
-	appConfig := schema.GeneralConfig{
-		CustomAPISequence: &schema.CustomSequence{
-			Command: []schema.Command{
-				schema.Command{Body: "/user/print"},
+func TestCustom(t *testing.T) {
+	cases := []struct {
+		Name          string
+		Job           entities.Job
+		Expected      []entities.CommandResult
+		ExpectedError error
+	}{
+		{
+			Name: "OK",
+			Job:  entities.Job{Host: entities.Host{Password: "old"}, Commands: []entities.Command{entities.Command{Body: `/certificate print detail`}}},
+			Expected: []entities.CommandResult{
+				entities.CommandResult{Body: "/<mt-bulk>establish connection", Responses: []string{"/<mt-bulk>establish connection", " --> attempt #0, password #0, job #"}},
+				entities.CommandResult{Body: `/certificate print detail`, Responses: []string{`/certificate print detail`}},
 			},
 		},
 	}
-	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["mikrotik_api"] = &schema.Service{}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			sugar := zap.NewExample().Sugar()
+			client := mocks.Client{}
 
-	if err := CustomAPI(context.Background(), MTAPI.GetService, &appConfig, schema.Host{}); err != nil {
-		t.Errorf("not expected error %v", err)
-	}
-	if !reflect.DeepEqual(MTAPI.CommandsExecuted, []string{"/user/print"}) {
-		t.Errorf("not expected commands %v", MTAPI.CommandsExecuted)
-	}
-}
+			results, err := Custom(context.Background(), sugar, client, &tc.Job)
+			if !reflect.DeepEqual(err, tc.ExpectedError) {
+				t.Errorf("got:%v, expected:%v", err, tc.ExpectedError)
+			}
 
-func TestCustomSSH(t *testing.T) {
-	SSHAPI := mocks.Service{}
-
-	appConfig := schema.GeneralConfig{
-		CustomSSHSequence: &schema.CustomSequence{
-			Command: []schema.Command{
-				schema.Command{Body: "/user print"},
-			},
-		},
-	}
-	appConfig.Service = make(map[string]*schema.Service)
-	appConfig.Service["ssh"] = &schema.Service{}
-
-	if err := CustomSSH(context.Background(), SSHAPI.GetService, &appConfig, schema.Host{}); err != nil {
-		t.Errorf("not expected error %v", err)
-	}
-	if !reflect.DeepEqual(SSHAPI.CommandsExecuted, []string{"/user print"}) {
-		t.Errorf("not expected commands %v", SSHAPI.CommandsExecuted)
+			if !reflect.DeepEqual(results, tc.Expected) {
+				t.Errorf("not expected commands %v", results)
+			}
+		})
 	}
 }

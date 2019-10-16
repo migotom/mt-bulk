@@ -2,27 +2,28 @@ package mode
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/migotom/mt-bulk/internal/schema"
-	"github.com/migotom/mt-bulk/internal/service"
+	"github.com/migotom/mt-bulk/internal/clients"
+	"github.com/migotom/mt-bulk/internal/entities"
+	"go.uber.org/zap"
 )
 
-// CustomAPI executes custom sequence of commands using Mikrotik SSL API.
-func CustomAPI(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
-	mt := newService(config, host)
+// Custom executes by client custom job.
+func Custom(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
+	results := make([]entities.CommandResult, 0, 8)
 
-	return mt.HandleSequence(ctx, func(payloadService service.Service) error {
-		return service.ExecuteCommands(ctx, payloadService, config.CustomAPISequence.Command)
-	})
+	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
+	results = append(results, establishResult)
+	if err != nil {
+		return results, err
+	}
+	defer client.Close()
 
-}
-
-// CustomSSH executes custom sequence of commands using SSH protocol.
-func CustomSSH(ctx context.Context, newService service.NewServiceFunc, config *schema.GeneralConfig, host schema.Host) error {
-	ssh := newService(config, host)
-
-	return ssh.HandleSequence(ctx, func(payloadService service.Service) error {
-		return service.ExecuteCommands(ctx, payloadService, config.CustomSSHSequence.Command)
-	})
-
+	commandResults, err := clients.ExecuteCommands(ctx, client, job.Commands)
+	results = append(results, commandResults...)
+	if err != nil {
+		return results, fmt.Errorf("executing custom commands error %v", err)
+	}
+	return results, err
 }

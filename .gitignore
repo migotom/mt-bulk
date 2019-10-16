@@ -13,6 +13,7 @@ mt-bulk.cfg
 bin/
 build/
 certs/
+keys/
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

@@ -1,0 +1,34 @@
+version: 2
+listen: ":8080"
+keys_store: "keys/restapi"
+token_secret: "secret"
+authenticate:
+  - key: "123"
+    allowed_host_patterns:
+      - "192.168.1..*"
+      - "admin@10.10.201.*"
+  - key: "abc"
+    allowed_host_patterns:
+      - "192.168.2..*"
+      - ".*"
+service:
+  workers: 4
+  skip_version_check: false
+  clients:
+    ssh:
+      verify_check_sleep_ms: 1000
+      retries: 3
+      port: 22
+      password: "new_secret, old_secret"
+      user: "admin"
+      keys_store: "keys/ssh"
+      pty:
+        widht: 160
+        height: 200
+    mikrotik_api:
+      verify_check_sleep_ms: 500
+      retries: 3
+      port: 8729
+      password: "new_secret, old_secret"
+      user: "admin"
+      keys_store: "keys/api"
