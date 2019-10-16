@@ -107,7 +107,7 @@ mt-bulk-rest-api -C examples/configurations/mt-bulk-rest-api.example.yml
 
 Stars REST API daemon
 
-## Endpoints
+#### Endpoints
 
 * Authenticate and obtain auth token. `"key"` is one of access keys defined in configuration [`authenticate.key`], each `"key"` can have list of regexp rules defining list of allowed device IP addresses to use in requests.
 
