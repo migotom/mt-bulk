@@ -14,7 +14,6 @@ CLI tool that process devices list and commands provided by command line argumen
 
 REST API daemon that process HTTPS POST requests with specified pair of commands and hosts to asynchronously execute on. 
 
-Detaled documentation of [API specification](#REST-API).
 
 ## Options
 
@@ -116,13 +115,13 @@ MT-bulk supports two formats of configuration files:
 * TOML format (https://github.com/toml-lang/toml)
 * YAML format (https://yaml.org/spec/)
 
-Defaults since version 2.x is YAML.
+Default configuration format since version 2.x is YAML.
 
 ### Configurations loading sequence 
 
 - Application defaults
 - System (`/etc/mt-bulk/config.yml`, `/Library/Application Support/MT-bulk/config.yml`)
-- Home (`~/.mt-bulk.yml`, `~/Library/Application Support/Uping/config.yml`)
+- Home (`~/.mt-bulk.yml`, `~/Library/Application Support/MT-bulk/config.yml`)
 - Command line `-C` option
 
 ### Hosts
@@ -140,7 +139,7 @@ This rule applies to hosts loaded using `--source-file` or provided directly by 
 
 - Verify host with running MT-bulk have access to Mikrotik device
 - Verify username, password, host and port are valid, double check using eg. OpenSSH (MT-bulk doesn't require any additional tools or libraries, uses builtin in runtime SSH implementation)
-- Some older RouterOS allows old and unsecure ciphers, SSH implementation builtinto MT-bulk will not establish connection using such ciphers, please upgrade your Mikrotik/RouterOS device
+- Some older RouterOS allows old and insecure ciphers, SSH implementation builtin MT-bulk will not establish connection using such ciphers, please upgrade your Mikrotik/RouterOS device
 - Use strong-crypto by setting `/ip ssh set strong-crypto=yes` on RouterOS
 - If nothing helps please provide log of establishing connection using ssh command `ssh -vvv <user>@<ip>:<port>` 
 
@@ -152,7 +151,7 @@ CLI in version 2.x is simplified, all switches and configuring options are moved
 
 ### Configuration file
 
-Configuration structure is rewrited and divided into few sections. Some of options changed as well (eg. `verify_check_sleep` into `verify_check_sleep_ms`). Please compare your current configuratio file with attached `mt-bulk.example.cfg`. 
+Configuration structure is rewritten and divided into few sections. Some of options changed as well (eg. `verify_check_sleep` into `verify_check_sleep_ms`). Please compare your current configuration file with attached `mt-bulk.example.cfg`. 
 To let know to MT-bulk that configuration file is compatible with version 2.x new entry in config file was added: `version = 2`.
 
 ## Credits
