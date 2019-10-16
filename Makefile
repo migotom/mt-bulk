@@ -6,6 +6,7 @@ BIN_DIR=bin
 BUILD_DIR=build
 
 EXAMPLES=examples
+DOCS=docs
 README=README.md
 VERSION=2.0.0
 
@@ -29,9 +30,11 @@ test:
 
 build-prepare:
 	[ -d $(BUILD_DIR)/mt-bulk/certs ] || mkdir -p $(BUILD_DIR)/mt-bulk/certs
+	[ -d $(BUILD_DIR)/mt-bulk/docs ] || mkdir -p $(BUILD_DIR)/mt-bulk/docs
 	[ -d $(BUILD_DIR)/mt-bulk/examples ] || mkdir -p $(BUILD_DIR)/mt-bulk/examples
 	[ -d $(BIN_DIR) ] || mkdir -p $(BIN_DIR)
 	cp -R $(EXAMPLES)/* $(BUILD_DIR)/mt-bulk/examples
+	cp -R $(DOCS)/* $(BUILD_DIR)/mt-bulk/docs
 	cp $(README) $(BUILD_DIR)/mt-bulk/
 
 # Cross compile
