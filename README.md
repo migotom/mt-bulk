@@ -107,6 +107,31 @@ mt-bulk-rest-api -C examples/configurations/mt-bulk-rest-api.example.yml
 
 Stars REST API daemon
 
+## Endpoints
+
+* Authenticate and obtain auth token. `"key"` is one of access keys defined in configuration [`authenticate.key`], each `"key"` can have list of regexp rules defining list of allowed device IP addresses to use in requests.
+
+```json
+{
+	"key": "abc"
+}
+```
+
+* MT-bulk API request. Run and execute specified job with optional additional commands on specified host. Each request must have valid token as `Authorization` header field. [List of possible operations](./docs/operations.md)
+
+```json
+{
+	"host": {
+		"ip": "10.0.0.1",
+		"user": "admin",
+		"password": "secret"
+	},
+	"kind": "CustomSSH",
+	"commands": [ { "body": "/user print", "expect": "LAST-LOGGED-IN" }]
+}
+```
+
+
 ## Configuration
 
 ### Format
