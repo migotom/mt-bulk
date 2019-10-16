@@ -27,7 +27,7 @@ func TestWorkerPoolGet(t *testing.T) {
 			}},
 		},
 		{
-			Name: "OK, ommit already used",
+			Name: "OK, omit already used",
 			Workers: []Worker{
 				Worker{processingHosts: []entities.Host{
 					entities.Host{IP: "10.0.0.1"},

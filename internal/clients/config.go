@@ -20,7 +20,7 @@ type Config struct {
 
 // Pty definition for SSH.
 type Pty struct {
-	Widht  int `toml:"width" yaml:"width"`
+	Width  int `toml:"width" yaml:"width"`
 	Height int `toml:"height" yaml:"height"`
 }
 
@@ -30,7 +30,7 @@ func NewConfig(port string) Config {
 		VerifySleepMs: 1000,
 		Retries:       2,
 		Pty: Pty{
-			Widht:  120,
+			Width:  120,
 			Height: 200,
 		},
 		DefaultPort: port,

@@ -150,7 +150,7 @@ func (ssh *SSH) Close() {
 	return
 }
 
-// RunCmd execues given command on remote device, optionally can compare execution result with provided expect regexp.
+// RunCmd executes given command on remote device, optionally can compare execution result with provided expect regexp.
 func (ssh *SSH) RunCmd(body string, expect *regexp.Regexp) (result string, err error) {
 	if err = ssh.initializeSession(); err != nil {
 		return
@@ -187,7 +187,7 @@ func (ssh *SSH) initializeSession() (err error) {
 	}
 	ssh.session.Stderr = os.Stderr
 
-	if err = ssh.session.RequestPty("xterm", ssh.Pty.Height, ssh.Pty.Widht, modes); err != nil {
+	if err = ssh.session.RequestPty("xterm", ssh.Pty.Height, ssh.Pty.Width, modes); err != nil {
 		return fmt.Errorf("request for pseudo terminal failed: %s", err)
 	}
 	if ssh.stdinBuf, err = ssh.session.StdinPipe(); err != nil {

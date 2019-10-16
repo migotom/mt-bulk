@@ -2,7 +2,7 @@ package entities
 
 import "encoding/json"
 
-// Command specifies single command, expected (or not) comamnd's result and optional sleep time that should be performed after command execution.
+// Command specifies single command, expected (or not) command's result and optional sleep time that should be performed after command execution.
 type Command struct {
 	Body        string `toml:"body" yaml:"body" json:"body"`
 	Expect      string `toml:"expect" yaml:"expect" json:"expect"`

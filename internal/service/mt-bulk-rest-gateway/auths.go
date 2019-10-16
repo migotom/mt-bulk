@@ -12,13 +12,13 @@ import (
 	"github.com/migotom/mt-bulk/internal/entities"
 )
 
-// TokenClaims repesents JWT authentication claims.
+// TokenClaims represents JWT authentication claims.
 type TokenClaims struct {
 	AllowedHostPatterns []string
 	jwt.StandardClaims
 }
 
-// Authenticate represents authenticatation rules.
+// Authenticate represents authentication rules.
 type Authenticate struct {
 	Key                 string   `toml:"key" yaml:"key"`
 	AllowedHostPatterns []string `toml:"allowed_host_patterns" yaml:"allowed_host_patterns"`
