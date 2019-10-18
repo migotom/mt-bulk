@@ -33,17 +33,17 @@ func InitSecureAPI(ctx context.Context, sugar *zap.SugaredLogger, client clients
 
 	config := client.GetConfig()
 
-	var sftpCopyResult string
-	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.crt"), "mtbulkdevice.crt")
-	results = append(results, entities.CommandResult{Body: sftpCopyResult, Error: err})
+	var sftpCopyResult entities.CommandResult
+	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.crt"), "sftp://mtbulkdevice.crt")
+	results = append(results, sftpCopyResult)
 	if err != nil {
-		return results, fmt.Errorf("file copy error %v", err)
+		return results, err
 	}
 
-	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.key"), "mtbulkdevice.key")
-	results = append(results, entities.CommandResult{Body: sftpCopyResult, Error: err})
+	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "device.key"), "sftp://mtbulkdevice.key")
+	results = append(results, sftpCopyResult)
 	if err != nil {
-		return results, fmt.Errorf("file copy error %v", err)
+		return results, err
 	}
 
 	// prepare sequence of commands to run on device

@@ -20,8 +20,8 @@ func (t Client) GetConfig() clients.Config {
 }
 
 // CopyFile mock.
-func (t Client) CopyFile(ctx context.Context, local, remote string) (string, error) {
-	return fmt.Sprintf("/<mt-bulk>copy sftp://%s %s", local, remote), nil
+func (t Client) CopyFile(ctx context.Context, local, remote string) (entities.CommandResult, error) {
+	return entities.CommandResult{Body: fmt.Sprintf("/<mt-bulk>copy sftp://%s %s", local, remote)}, nil
 }
 
 // Connect mock.

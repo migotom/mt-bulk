@@ -112,6 +112,23 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 
 	}
 
+	if m, _ := arguments["sftp"].(bool); m {
+		source, ok := arguments["<source>"].(string)
+		if !ok {
+			return Config{}, nil, entities.Job{}, fmt.Errorf("missing source")
+		}
+
+		target, ok := arguments["<target>"].(string)
+		if !ok {
+			return Config{}, nil, entities.Job{}, fmt.Errorf("missing source")
+		}
+
+		jobTemplate = entities.Job{
+			Kind: mode.SFTPMode,
+			Data: map[string]string{"source": source, "target": target},
+		}
+	}
+
 	if hosts, ok := arguments["<hosts>"].([]string); ok {
 		jobsLoaders = append(jobsLoaders, func(ctx context.Context, jobTemplate entities.Job) ([]entities.Job, error) {
 			return driver.ArgvLoadJobs(ctx, jobTemplate, hosts)

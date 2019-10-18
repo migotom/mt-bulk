@@ -22,6 +22,7 @@ Usage:
   mt-bulk change-password (--new=<newpass>) [--user=<user>] [options] [<hosts>...]  
   mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
+  mt-bulk sftp <source> <target> [options] [<hosts>...]  
   mt-bulk -h | --help
   mt-bulk --version
 

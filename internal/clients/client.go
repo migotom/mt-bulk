@@ -23,7 +23,7 @@ type Client interface {
 
 // Copier interface for copy files capable clients.
 type Copier interface {
-	CopyFile(ctx context.Context, local, remote string) (string, error)
+	CopyFile(ctx context.Context, source, target string) (entities.CommandResult, error)
 }
 
 // EstablishConnection tries to establish connection for provided host by specified client.

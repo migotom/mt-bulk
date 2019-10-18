@@ -25,4 +25,6 @@ const (
 	InitPublicKeySSHMode = "InitPublicKeySSH"
 	// CheckMTbulkVersionMode is check MT-bulk version job operation name.
 	CheckMTbulkVersionMode = "CheckMTbulkVersion"
+	// SFTPMode is SFTP job operation name.
+	SFTPMode = "SFTP"
 )

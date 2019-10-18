@@ -65,6 +65,9 @@ func (w *Worker) ProcessJobs(ctx context.Context, clientConfig clients.Clients) 
 				handler = mode.ChangePassword
 			case mode.CheckMTbulkVersionMode:
 				handler = mode.CheckMTbulkVersion(w.version)
+			case mode.SFTPMode:
+				client = clients.NewSSHClient(clientConfig.SSH)
+				handler = mode.SFTP
 			default:
 				w.sugar.Infow("unexpected job", "kind", job.Kind)
 				continue

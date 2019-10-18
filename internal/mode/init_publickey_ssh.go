@@ -31,11 +31,11 @@ func InitPublicKeySSH(ctx context.Context, sugar *zap.SugaredLogger, client clie
 		return nil, fmt.Errorf("copy file operation not implemented for protocol %v", client)
 	}
 
-	var sftpCopyResult string
-	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "id_rsa.pub"), "id_rsa.pub")
-	results = append(results, entities.CommandResult{Body: sftpCopyResult, Error: err})
+	var sftpCopyResult entities.CommandResult
+	sftpCopyResult, err = copier.CopyFile(ctx, filepath.Join(certificatesDirectory, "id_rsa.pub"), "sftp://id_rsa.pub")
+	results = append(results, sftpCopyResult)
 	if err != nil {
-		return results, fmt.Errorf("file copy error %v", err)
+		return results, err
 	}
 
 	// prepare sequence of commands to run on device
