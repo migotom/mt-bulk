@@ -22,9 +22,10 @@ const SSHDefaultPort = "22"
 // NewSSHClient returns new SSH client.
 func NewSSHClient(config Config) Client {
 	return &SSH{
-		prompt:          regexp.MustCompile(`(?sm)\x1b?\[[A-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?@[A-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?\] >.{0,1}$`),
-		nonASCIIremover: regexp.MustCompile("[[:^ascii:]]+"),
-		Config:          config,
+		prompt:              regexp.MustCompile(`(?sm)(\x1b)?(\x5b\x39\x39\x39\x39\x42)?\[[A-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?@[A-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?\] >.{0,1}$`),
+		nonASCIIremover:     regexp.MustCompile("[[:^ascii:]]+"),
+		utf8ArtefactRemover: regexp.MustCompile(`\x1b\x5b\x4b\x0a`),
+		Config:              config,
 	}
 }
 
@@ -33,11 +34,11 @@ type SSH struct {
 	client  *cryptossh.Client
 	session *cryptossh.Session
 
-	stdoutBuf       io.Reader
-	stdinBuf        io.Writer
-	prompt          *regexp.Regexp
-	nonASCIIremover *regexp.Regexp
-
+	stdoutBuf           io.Reader
+	stdinBuf            io.Writer
+	prompt              *regexp.Regexp
+	nonASCIIremover     *regexp.Regexp
+	utf8ArtefactRemover *regexp.Regexp
 	Config
 }
 
@@ -170,10 +171,11 @@ func (ssh *SSH) RunCmd(body string, expect *regexp.Regexp) (result string, err e
 		result, err = waitForExpected(ssh.stdoutBuf, ssh.prompt)
 	}
 
-	return ssh.prompt.ReplaceAllString(
-		ssh.nonASCIIremover.ReplaceAllString(result, ""),
-		"",
-	), err
+	result = ssh.prompt.ReplaceAllString(result, "")
+	result = ssh.utf8ArtefactRemover.ReplaceAllString(result, "")
+	result = ssh.nonASCIIremover.ReplaceAllString(result, "")
+
+	return result, err
 }
 
 func (ssh *SSH) initializeSession() (err error) {
