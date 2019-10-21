@@ -40,7 +40,7 @@ func TestChangePassword(t *testing.T) {
 			sugar := zap.NewExample().Sugar()
 			client := mocks.Client{}
 
-			results, err := ChangePassword(context.Background(), sugar, client, &tc.Job)
+			results, _, err := ChangePassword(context.Background(), sugar, client, &tc.Job)
 			if !reflect.DeepEqual(err, tc.ExpectedError) {
 				t.Errorf("got:%v, expected:%v", err, tc.ExpectedError)
 			}
