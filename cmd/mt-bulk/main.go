@@ -20,9 +20,10 @@ Usage:
   mt-bulk init-secure-api [options] [<hosts>...]
   mt-bulk init-publickey-ssh [options] [<hosts>...]
   mt-bulk change-password (--new=<newpass>) [--user=<user>] [options] [<hosts>...]  
+  mt-bulk system-backup (--name=<name>) (--backup-store=<backups>) [options] [<hosts>...]  
+  mt-bulk sftp <source> <target> [options] [<hosts>...]  
   mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
-  mt-bulk sftp <source> <target> [options] [<hosts>...]  
   mt-bulk -h | --help
   mt-bulk --version
 

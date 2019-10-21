@@ -18,8 +18,8 @@ func (c Command) String() string {
 // CommandResult defines result of execution single command/operation.
 type CommandResult struct {
 	Body      string   `json:"body"`
-	Responses []string `json:"responses"`
-	Error     error    `json:"error"`
+	Responses []string `json:"responses,omitempty"`
+	Error     error    `json:"error,omitempty"`
 }
 
 // MarshalJSON marshals CommandResult with error support.

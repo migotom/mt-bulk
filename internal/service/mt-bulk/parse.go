@@ -129,6 +129,23 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 		}
 	}
 
+	if m, _ := arguments["system-backup"].(bool); m {
+		name, ok := arguments["--name"].(string)
+		if !ok {
+			return Config{}, nil, entities.Job{}, fmt.Errorf("missing backup name")
+		}
+
+		backupsStore, ok := arguments["--backup-store"].(string)
+		if !ok {
+			return Config{}, nil, entities.Job{}, fmt.Errorf("missing local backup store location")
+		}
+
+		jobTemplate = entities.Job{
+			Kind: mode.SystemBackupMode,
+			Data: map[string]string{"name": name, "backups_store": backupsStore},
+		}
+	}
+
 	if hosts, ok := arguments["<hosts>"].([]string); ok {
 		jobsLoaders = append(jobsLoaders, func(ctx context.Context, jobTemplate entities.Job) ([]entities.Job, error) {
 			return driver.ArgvLoadJobs(ctx, jobTemplate, hosts)

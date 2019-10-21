@@ -1,12 +1,30 @@
 package clients
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 )
+
+// SecurePathJoin creates path isolated to root directory.
+func SecurePathJoin(root, name string) (string, error) {
+	if strings.Index(name, "sftp://") == 0 {
+		return name, nil
+	}
+
+	if filepath.Separator != '/' && strings.ContainsRune(name, filepath.Separator) {
+		return "", errors.New("invalid character in file path")
+	}
+	if root == "" {
+		root = "."
+	}
+	return filepath.Join(root, filepath.FromSlash(path.Clean("/"+name))), nil
+}
 
 func waitForExpected(reader io.Reader, expect *regexp.Regexp) (result string, err error) {
 	resultChan := make(chan string)

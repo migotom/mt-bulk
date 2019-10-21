@@ -4,9 +4,10 @@ import "encoding/json"
 
 // Result response from worker.
 type Result struct {
-	Job     Job             `toml:"job" yaml:"job" json:"-"`
-	Results []CommandResult `toml:"results" yaml:"results" json:"results"`
-	Error   error           `toml:"error" yaml:"error" json:"error,omitempty"`
+	Job          Job             `toml:"job" yaml:"job" json:"-"`
+	Results      []CommandResult `toml:"results" yaml:"results" json:"results"`
+	DownloadURLs []string        `json:"download_urls,omitempty"`
+	Error        error           `toml:"error" yaml:"error" json:"error,omitempty"`
 }
 
 // MarshalJSON marshals Result with error support.

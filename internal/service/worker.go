@@ -68,17 +68,20 @@ func (w *Worker) ProcessJobs(ctx context.Context, clientConfig clients.Clients) 
 			case mode.SFTPMode:
 				client = clients.NewSSHClient(clientConfig.SSH)
 				handler = mode.SFTP
+			case mode.SystemBackupMode:
+				client = clients.NewSSHClient(clientConfig.SSH)
+				handler = mode.SystemBackup
 			default:
 				w.sugar.Infow("unexpected job", "kind", job.Kind)
 				continue
 			}
 
-			results, err := handler(ctx, w.sugar, client, &job)
+			results, downloadURLs, err := handler(ctx, w.sugar, client, &job)
 
 			select {
 			case <-ctx.Done():
 				return
-			case job.Result <- entities.Result{Job: job, Results: results, Error: err}:
+			case job.Result <- entities.Result{Job: job, Results: results, Error: err, DownloadURLs: downloadURLs}:
 			}
 			close(job.Result)
 		}

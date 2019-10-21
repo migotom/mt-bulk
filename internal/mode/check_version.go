@@ -17,16 +17,16 @@ import (
 
 // CheckMTbulkVersion executes by client custom job.
 func CheckMTbulkVersion(version string) OperationModeFunc {
-	return func(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
+	return func(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, []string, error) {
 		if err := checkVersion(version); err != nil {
 			return []entities.CommandResult{
 				entities.CommandResult{
 					Body:  "/<mt-bulk>check version",
 					Error: err,
 				},
-			}, err
+			}, nil, err
 		}
-		return nil, nil
+		return nil, nil, nil
 	}
 }
 
@@ -43,28 +43,28 @@ func checkVersion(currentVersion string) error {
 
 	req, err := http.NewRequest("GET", "https://api.github.com/repos/migotom/mt-bulk/releases/latest", nil)
 	if err != nil {
-		return fmt.Errorf("can't create request to fetch latest release info: %s", err)
+		return nil
 	}
 
 	req.Header.Add("Accept", "application/vnd.github.v3+json")
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("can't fetch latest release info: %s", err)
+		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("can't fetch latest release info, status code: %v", resp.StatusCode)
+		return nil
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("can't read details of latest release: %s", err)
+		return nil
 	}
 
 	var currentRelease release
 	if err := json.Unmarshal(body, &currentRelease); err != nil {
-		return fmt.Errorf("can't parse details of latest release: %s", err)
+		return nil
 	}
 
 	if currentRelease.Draft {

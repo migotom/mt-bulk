@@ -60,6 +60,7 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 		mtbulk.sugar.Infow("processing job", "commands", job.Commands, "id", id)
 
 		resultChan := make(chan entities.Result)
+		job.Data["root_directory"] = mtbulk.RootDirectory
 		job.Result = resultChan
 		job.ID = id
 

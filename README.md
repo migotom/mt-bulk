@@ -71,6 +71,47 @@ List of possible operations to execute by CLI and REST API:
 * [Change user's password](./docs/operations.md#Change-user's-password)
 * [Execute sequence of custom commands](./docs/operations.md#Execute-sequence-of-custom-commands)
 
+## Configurations
+
+### Format
+
+MT-bulk supports two formats of configuration files:
+* TOML format (https://github.com/toml-lang/toml)
+* YAML format (https://yaml.org/spec/)
+
+Default configuration format since version 2.x is YAML.
+
+### Configurations loading sequence 
+
+- Application defaults
+- System (`/etc/mt-bulk/config.yml`, `/Library/Application Support/MT-bulk/config.yml`)
+- Home (`~/.mt-bulk.yml`, `~/Library/Application Support/MT-bulk/config.yml`)
+- Command line `-C` option
+
+### Hosts
+
+Host can be specified using:
+* simple text format:
+  - `ip`
+  - `ip:port`
+  - `foo.bar.com:port`
+
+* using YAML:
+```yaml
+host:
+  - ip: "192.168.1.1"
+    password: "secret"
+  - ip: "192.168.1.2:22"
+    user: "john"
+    password: "secret"
+```
+
+### Detailed descriptions
+
+* [MT-bulk commandline tool
+](./docs/configuration-mt-bulk.md#MT-bulk-configuration)
+* [MT-bulk REST API](./docs/configuration-mt-bulk-rest-api.md#MT-bulk-REST-API-configuration)
+
 ## Examples
 
 ### MT-bulk
@@ -105,8 +146,6 @@ Generates self signed SSL certificates and starts REST API daemon.
 mt-bulk-rest-api -C examples/configurations/mt-bulk-rest-api.example.yml
 ```
 
-Stars REST API daemon
-
 #### Endpoints
 
 * https://localhost:8080/authenticate \
@@ -132,33 +171,6 @@ MT-bulk API request. Run and execute specified job with optional additional comm
 	"commands": [ { "body": "/user print", "expect": "LAST-LOGGED-IN" }]
 }
 ```
-
-
-## Configuration
-
-### Format
-
-MT-bulk supports two formats of configuration files:
-* TOML format (https://github.com/toml-lang/toml)
-* YAML format (https://yaml.org/spec/)
-
-Default configuration format since version 2.x is YAML.
-
-### Configurations loading sequence 
-
-- Application defaults
-- System (`/etc/mt-bulk/config.yml`, `/Library/Application Support/MT-bulk/config.yml`)
-- Home (`~/.mt-bulk.yml`, `~/Library/Application Support/MT-bulk/config.yml`)
-- Command line `-C` option
-
-### Hosts
-
-Host can be specified using format:
-- `ip`
-- `ip:port`
-- `foo.bar.com:port`
-
-This rule applies to hosts loaded using `--source-file` or provided directly by `[<hosts>...]`
 
 ## Troubleshooting
 

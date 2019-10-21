@@ -97,6 +97,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
+		sugar.Infow("MT-bulk REST API", "listen", mtbulkRESTAPI.Config.Listen)
 		err := httpServer.ListenAndServeTLS(
 			filepath.Join(mtbulkRESTAPI.Config.KeyStore, "rest-api.crt"),
 			filepath.Join(mtbulkRESTAPI.Config.KeyStore, "rest-api.key"),

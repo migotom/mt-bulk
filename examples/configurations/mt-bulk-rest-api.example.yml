@@ -1,5 +1,6 @@
 version: 2
 listen: ":8080"
+root_directory: "web/"
 keys_store: "keys/restapi"
 token_secret: "secret"
 authenticate:

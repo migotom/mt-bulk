@@ -11,10 +11,10 @@ import (
 )
 
 // ChangePassword changes device's admin password.
-func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, error) {
+func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, []string, error) {
 	newPassword, ok := job.Data["new_password"]
 	if !ok || newPassword == "" {
-		return nil, fmt.Errorf("missing or empty new password for change password operation")
+		return nil, nil, fmt.Errorf("missing or empty new password for change password operation")
 	}
 
 	user, ok := job.Data["user"]
@@ -27,7 +27,7 @@ func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client client
 	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
 	results = append(results, establishResult)
 	if err != nil {
-		return results, err
+		return results, nil, err
 	}
 	defer client.Close()
 
@@ -38,7 +38,7 @@ func ChangePassword(ctx context.Context, sugar *zap.SugaredLogger, client client
 	commandResults, err := clients.ExecuteCommands(ctx, client, commands)
 	results = append(results, commandResults...)
 	if err != nil {
-		return results, fmt.Errorf("executing custom commands error %v", err)
+		return results, nil, fmt.Errorf("executing custom commands error %v", err)
 	}
-	return results, err
+	return results, nil, err
 }
