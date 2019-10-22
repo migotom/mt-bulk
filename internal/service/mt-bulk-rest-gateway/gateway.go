@@ -46,13 +46,13 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 
 		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&job); err != nil {
-			http.Error(w, "Bad request", 400)
+			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
 		job.Host.Parse()
 
 		if err := mtbulk.AuthorizeRequest(r, &job); err != nil {
-			http.Error(w, err.Error(), 401)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
@@ -70,7 +70,7 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 		// send job to workers
 		select {
 		case <-r.Context().Done():
-			http.Error(w, "Request cancelled by host", 410)
+			http.Error(w, "request cancelled by host", http.StatusGone)
 			return
 		case mtbulk.Service.Jobs <- job:
 		}
@@ -78,7 +78,7 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 		// fetch result
 		select {
 		case <-r.Context().Done():
-			http.Error(w, "Request cancelled by host", 410)
+			http.Error(w, "request cancelled by host", http.StatusGone)
 			return
 		case result := <-resultChan:
 			if result.Error != nil {
@@ -86,7 +86,7 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 			}
 
 			if err := json.NewEncoder(w).Encode(&result); err != nil {
-				http.Error(w, err.Error(), 500)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		}
 	}

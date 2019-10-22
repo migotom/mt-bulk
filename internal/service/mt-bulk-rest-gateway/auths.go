@@ -34,7 +34,7 @@ func (mtbulk *MTbulkRESTGateway) AuthenticateToken(ctx context.Context) http.Han
 
 		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&auth); err != nil {
-			http.Error(w, "Bad request", 400)
+			http.Error(w, "Bad request", http.StatusBadRequest)
 		}
 
 		var claims TokenClaims
@@ -44,7 +44,7 @@ func (mtbulk *MTbulkRESTGateway) AuthenticateToken(ctx context.Context) http.Han
 				claims.ExpiresAt = time.Now().Add(time.Duration(1) * time.Hour).Unix()
 				token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(mtbulk.Config.TokenSecret))
 				if err != nil {
-					http.Error(w, err.Error(), 500)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 
@@ -54,14 +54,14 @@ func (mtbulk *MTbulkRESTGateway) AuthenticateToken(ctx context.Context) http.Han
 					Token: token,
 				}
 				if err := json.NewEncoder(w).Encode(&response); err != nil {
-					http.Error(w, err.Error(), 500)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				return
 			}
 		}
 
-		http.Error(w, "Not authenticated", 401)
+		http.Error(w, "Not authenticated", http.StatusUnauthorized)
 	}
 }
 
@@ -73,13 +73,13 @@ func (mtbulk *MTbulkRESTGateway) AuthorizeMiddleware(next http.Handler) http.Han
 		var claims TokenClaims
 		token, err := jwt.ParseWithClaims(authorizationToken, &claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, errors.New("Not authenticated")
+				return nil, errors.New("not authenticated")
 			}
 			return []byte(mtbulk.Config.TokenSecret), nil
 		})
 
 		if err != nil || !token.Valid {
-			http.Error(w, "Not authenticated", 401)
+			http.Error(w, "not authenticated", http.StatusUnauthorized)
 			return
 		}
 

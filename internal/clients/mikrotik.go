@@ -60,7 +60,7 @@ func (mikrotikAPI *MikrotikAPI) Connect(ctx context.Context, IP, Port, User, Pas
 		return ErrorWrongPassword{err}
 	}
 	if err != nil {
-		return ErrorRetryable{fmt.Errorf("Mikrotik API handle sequence error %v", err)}
+		return ErrorRetryable{fmt.Errorf("mikrotik API handle sequence error %v", err)}
 	}
 
 	mikrotikAPI.mtClient.Async()
@@ -70,7 +70,6 @@ func (mikrotikAPI *MikrotikAPI) Connect(ctx context.Context, IP, Port, User, Pas
 // Close Mikrotik API client session.
 func (mikrotikAPI *MikrotikAPI) Close() {
 	mikrotikAPI.mtClient.Close()
-	return
 }
 
 // RunCmd execues given command on remote device, optionally can compare execution result with provided expect regexp.

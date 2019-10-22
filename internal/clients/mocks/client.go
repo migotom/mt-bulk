@@ -36,5 +36,4 @@ func (t Client) RunCmd(val string, re *regexp.Regexp) (string, error) {
 
 // Close mock.
 func (t Client) Close() {
-	return
 }

@@ -68,7 +68,7 @@ func SFTP(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, 
 		return results, nil, err
 	}
 
-	if strings.Index(source, "sftp://") == 0 && strings.Index(target, "sftp://") == -1 {
+	if strings.Index(source, "sftp://") == 0 && !strings.Contains(target, "sftp://") {
 		return results, []string{target}, err
 	}
 	return results, nil, err

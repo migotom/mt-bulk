@@ -154,7 +154,6 @@ func (ssh *SSH) Close() {
 	case <-time.After(1 * time.Second):
 	case <-wait:
 	}
-	return
 }
 
 // RunCmd executes given command on remote device, optionally can compare execution result with provided expect regexp.
