@@ -8,13 +8,6 @@ MT-bulk supports two formats of configuration files:
 
 Default configuration format since version 2.x is YAML.
 
-### Configurations loading sequence 
-
-- Application defaults
-- System (`/etc/mt-bulk/config.yml`, `/Library/Application Support/MT-bulk/config.yml`)
-- Home (`~/.mt-bulk.yml`, `~/Library/Application Support/MT-bulk/config.yml`)
-- Command line `-C` option
-
 ### Main
 
 Property | Default | Summary

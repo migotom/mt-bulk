@@ -52,8 +52,23 @@ func main() {
 	// define routes
 	router := mux.NewRouter()
 	router.Use(mtbulkRESTAPI.LogMiddleware(ctx))
+
+	// authentication
 	router.HandleFunc("/authenticate", mtbulkRESTAPI.AuthenticateToken(ctx)).Methods("POST")
 
+	// file uploads/dowloads
+	rootDirectory := filepath.Clean(filepath.Join("/", mtbulkRESTAPI.Config.RootDirectory))
+	fileServer := http.FileServer(http.Dir(mtbulkRESTAPI.Config.RootDirectory))
+	filesRouter := router.PathPrefix(rootDirectory).Subrouter()
+	filesRouter.Use(mtbulkRESTAPI.StripFileIndexes)
+	filesRouter.Use(mtbulkRESTAPI.AuthorizeMiddleware)
+	filesRouter.PathPrefix("/").Handler(http.StripPrefix(rootDirectory+"/", fileServer))
+
+	uploadRouter := router.PathPrefix("/upload").Subrouter()
+	uploadRouter.Use(mtbulkRESTAPI.AuthorizeMiddleware)
+	uploadRouter.HandleFunc("", mtbulkRESTAPI.FileUpload(ctx)).Methods("POST")
+
+	// jobs
 	jobRouter := router.PathPrefix("/job").Subrouter()
 	jobRouter.Use(mtbulkRESTAPI.AuthorizeMiddleware)
 	jobRouter.HandleFunc("", mtbulkRESTAPI.JobHandler(ctx)).Methods("POST")

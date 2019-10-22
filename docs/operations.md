@@ -11,6 +11,8 @@ Each of operation have two sections, example syntax to use as CLI util `mt-bulk`
 * [Initialize device to use Mikrotik SSL API](#Initialize-device-to-use-Mikrotik-SSL-API)
 * [Initialize device to use Public key SSH authentication](#Initialize-device-to-use-Public-key-SSH-authentication)
 * [Change user's password](#Change-user's-password)
+* [System backup](#System-backup)
+* [SFTP](#SFTP)
 * [Execute sequence of custom commands](#Execute-sequence-of-custom-commands)
 
 ## Generate Mikrotik API SSL certificates
@@ -130,6 +132,60 @@ mt-bulk change-password --new=newsecret --user=admin -C your.configuration.file.
   "data": { 
     "user": "admin",
     "new_password": "newsecret"
+  }
+}
+```
+
+## System backup
+
+Do backup of a system with option `--new=<name>` defining name of backup and `--backup-store=<backups>` as a location where to store backup.
+
+### CLI
+
+```bash
+mt-bulk system-backup --name=backup --backup-store=backups/ -C your.configuration.file.yml 10.0.0.1
+```
+
+### REST API request
+
+```json
+{
+  "host": {
+		"ip": "10.0.0.1",
+		"user": "admin",
+		"password": "secret"
+  },
+  "kind": "SystemBackup",
+  "data": { 
+    "name": "backup",
+    "backups_store": "backups/"
+  }
+}
+```
+
+## SFTP
+
+Transfer files to and from devices using SFTP protocol.
+
+### CLI
+
+```bash
+mt-bulk sftp sftp://file_on_mikrotik.txt local_folder/file.txt -C your.configuration.file.yml 10.0.0.1
+```
+
+### REST API request
+
+```json
+{
+  "host": {
+		"ip": "10.0.0.1",
+		"user": "admin",
+		"password": "secret"
+  },
+  "kind": "SFTP",
+  "data": { 
+    "source": "sftp://file_on_mikrotik.txt",
+    "target": "local_folder/file.txt"
   }
 }
 ```

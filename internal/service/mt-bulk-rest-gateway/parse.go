@@ -29,6 +29,9 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 	if mtbulkConfig.Listen == "" {
 		return Config{}, errors.New("HTTPS server listen address not defined")
 	}
+	if mtbulkConfig.RootDirectory == "" {
+		return Config{}, errors.New("root directory not defined")
+	}
 
 	if gen, _ := arguments["gen-https-certs"].(bool); gen {
 		if err := clients.GenerateCA(mtbulkConfig.KeyStore); err != nil {

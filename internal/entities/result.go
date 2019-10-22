@@ -5,7 +5,7 @@ import "encoding/json"
 // Result response from worker.
 type Result struct {
 	Job          Job             `toml:"job" yaml:"job" json:"-"`
-	Results      []CommandResult `toml:"results" yaml:"results" json:"results"`
+	Results      []CommandResult `toml:"results" yaml:"results" json:"results,omitempty"`
 	DownloadURLs []string        `json:"download_urls,omitempty"`
 	Error        error           `toml:"error" yaml:"error" json:"error,omitempty"`
 }
