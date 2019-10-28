@@ -2,29 +2,37 @@ package service
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"go.uber.org/zap"
 
 	"github.com/migotom/mt-bulk/internal/clients"
 	"github.com/migotom/mt-bulk/internal/entities"
+	"github.com/migotom/mt-bulk/internal/kvdb"
 	"github.com/migotom/mt-bulk/internal/mode"
+	"github.com/migotom/mt-bulk/internal/vulnerabilities"
 )
 
 // Worker processing given jobs by jobs channel and sending responses back to results channel.
 type Worker struct {
 	version         string
 	sugar           *zap.SugaredLogger
+	kv              kvdb.KV
 	jobs            chan entities.Job
 	processingHosts []entities.Host
+
+	vulnerabilitiesManager *vulnerabilities.Manager
 }
 
 // NewWorker returns new worker.
-func NewWorker(sugar *zap.SugaredLogger, jobsQueueSize int, version string) *Worker {
+func NewWorker(sugar *zap.SugaredLogger, jobsQueueSize int, version string, kv kvdb.KV, vulnerabilitiesManager *vulnerabilities.Manager) *Worker {
 	return &Worker{
-		sugar:   sugar,
-		version: version,
-		jobs:    make(chan entities.Job, jobsQueueSize),
+		sugar:                  sugar,
+		version:                version,
+		jobs:                   make(chan entities.Job, jobsQueueSize),
+		kv:                     kv,
+		vulnerabilitiesManager: vulnerabilitiesManager,
 	}
 }
 
@@ -64,24 +72,30 @@ func (w *Worker) ProcessJobs(ctx context.Context, clientConfig clients.Clients) 
 				client = clients.NewMikrotikAPIClient(clientConfig.MikrotikAPI)
 				handler = mode.ChangePassword
 			case mode.CheckMTbulkVersionMode:
-				handler = mode.CheckMTbulkVersion(w.version)
+				handler = mode.CheckMTbulkVersion(w.version, w.kv)
 			case mode.SFTPMode:
 				client = clients.NewSSHClient(clientConfig.SSH)
 				handler = mode.SFTP
 			case mode.SystemBackupMode:
 				client = clients.NewSSHClient(clientConfig.SSH)
 				handler = mode.SystemBackup
+			case mode.SecurityAuditMode:
+				client = clients.NewSSHClient(clientConfig.SSH)
+				handler = mode.SecurityAudit(w.vulnerabilitiesManager)
+
 			default:
 				w.sugar.Infow("unexpected job", "kind", job.Kind)
+				job.Result <- entities.Result{Errors: []error{errors.New("unexpected job")}}
 				continue
 			}
 
-			results, downloadURLs, err := handler(ctx, w.sugar, client, &job)
+			result := handler(ctx, w.sugar, client, &job)
+			result.Job = job
 
 			select {
 			case <-ctx.Done():
 				return
-			case job.Result <- entities.Result{Job: job, Results: results, Error: err, DownloadURLs: downloadURLs}:
+			case job.Result <- result:
 			}
 			close(job.Result)
 		}

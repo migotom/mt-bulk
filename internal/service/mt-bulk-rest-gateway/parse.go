@@ -2,10 +2,13 @@ package mtbulkrestapi
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 
 	"github.com/migotom/mt-bulk/internal/clients"
 	"github.com/migotom/mt-bulk/internal/config"
 	"github.com/migotom/mt-bulk/internal/service"
+	"github.com/migotom/mt-bulk/internal/vulnerabilities"
 )
 
 func configParser(arguments map[string]interface{}, version string) (mtbulkConfig Config, err error) {
@@ -32,8 +35,22 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 	if mtbulkConfig.RootDirectory == "" {
 		return Config{}, errors.New("root directory not defined")
 	}
+	if mtbulkConfig.Service.KVStore == "" {
+		return Config{}, errors.New("MTbulk database directory not defined")
+	}
+	if mtbulkConfig.Service.CVEURL == "" {
+		mtbulkConfig.Service.CVEURL = vulnerabilities.CVEURL
+	}
 
-	if gen, _ := arguments["gen-https-certs"].(bool); gen {
+	var needGenerateCerts bool
+	if _, err := os.Stat(filepath.FromSlash(filepath.Join(mtbulkConfig.KeyStore, "rest-api.crt"))); os.IsNotExist(err) {
+		needGenerateCerts = true
+	}
+	if _, err := os.Stat(filepath.FromSlash(filepath.Join(mtbulkConfig.KeyStore, "rest-api.key"))); os.IsNotExist(err) {
+		needGenerateCerts = true
+	}
+	if gen, _ := arguments["gen-https-certs"].(bool); gen || needGenerateCerts {
+		_ = os.MkdirAll(filepath.FromSlash(mtbulkConfig.KeyStore), os.ModePerm)
 		if err := clients.GenerateCA(mtbulkConfig.KeyStore); err != nil {
 			return Config{}, err
 		}

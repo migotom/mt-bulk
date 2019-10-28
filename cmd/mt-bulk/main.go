@@ -24,6 +24,7 @@ Usage:
   mt-bulk sftp <source> <target> [options] [<hosts>...]  
   mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
   mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
+  mt-bulk security-audit [options] [<hosts>...] 
   mt-bulk -h | --help
   mt-bulk --version
 
@@ -82,7 +83,7 @@ func main() {
 	}()
 
 	// run workers
-	mtbulk.Listen(ctx)
+	mtbulk.Listen(ctx, cancel)
 
 	wg.Wait()
 	os.Exit(mtbulk.Status.Get())

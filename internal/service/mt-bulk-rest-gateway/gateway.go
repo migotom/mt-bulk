@@ -8,12 +8,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/migotom/mt-bulk/internal/entities"
+	"github.com/migotom/mt-bulk/internal/kvdb"
 	"github.com/migotom/mt-bulk/internal/service"
 )
 
 // MTbulkRESTGateway service.
 type MTbulkRESTGateway struct {
 	Service *service.Service
+	kv      kvdb.KV
 	sugar   *zap.SugaredLogger
 
 	Config
@@ -26,17 +28,25 @@ func NewMTbulkRestGateway(sugar *zap.SugaredLogger, arguments map[string]interfa
 		return &MTbulkRESTGateway{}, err
 	}
 
+	kv, err := kvdb.OpenKV(sugar, config.Service.KVStore)
+	if err != nil {
+		return &MTbulkRESTGateway{}, err
+	}
+
 	return &MTbulkRESTGateway{
 		sugar:   sugar,
+		kv:      kv,
 		Config:  config,
-		Service: service.NewService(sugar, config.Service),
+		Service: service.NewService(sugar, kv, config.Service),
 	}, nil
 }
 
 // RunWorkers runs service workers and process all provided jobs.
 // Returns after process of all jobs.
-func (mtbulk *MTbulkRESTGateway) RunWorkers(ctx context.Context) {
-	mtbulk.Service.Listen(ctx)
+func (mtbulk *MTbulkRESTGateway) RunWorkers(ctx context.Context, cancel context.CancelFunc) {
+	defer mtbulk.kv.Close()
+
+	mtbulk.Service.Listen(ctx, cancel)
 }
 
 // JobHandler parses job request and process it with pool of workers.
@@ -81,7 +91,7 @@ func (mtbulk *MTbulkRESTGateway) JobHandler(ctx context.Context) http.HandlerFun
 			http.Error(w, "request cancelled by host", http.StatusGone)
 			return
 		case result := <-resultChan:
-			if result.Error != nil {
+			if result.Errors != nil {
 				w.WriteHeader(http.StatusNotAcceptable)
 			}
 

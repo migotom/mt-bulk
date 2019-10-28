@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/migotom/mt-bulk/internal/service"
-
-	"github.com/migotom/mt-bulk/internal/config"
-	"github.com/migotom/mt-bulk/internal/mode"
-
 	"github.com/migotom/mt-bulk/internal/clients"
+	"github.com/migotom/mt-bulk/internal/config"
 	"github.com/migotom/mt-bulk/internal/driver"
 	"github.com/migotom/mt-bulk/internal/entities"
+	"github.com/migotom/mt-bulk/internal/mode"
+	"github.com/migotom/mt-bulk/internal/service"
+	"github.com/migotom/mt-bulk/internal/vulnerabilities"
 )
 
 func configParser(arguments map[string]interface{}, version string) (mtbulkConfig Config, jobsLoaders []entities.JobsLoaderFunc, jobTemplate entities.Job, err error) {
@@ -30,6 +29,13 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 	if mtbulkConfig.Version < 2 {
 		return Config{}, nil, entities.Job{}, errors.New("incompatible configuration version, required version 2 or above")
 	}
+	if mtbulkConfig.Service.KVStore == "" {
+		return Config{}, nil, entities.Job{}, errors.New("MTbulk database directory not defined")
+	}
+	if mtbulkConfig.Service.CVEURL == "" {
+		mtbulkConfig.Service.CVEURL = vulnerabilities.CVEURL
+	}
+
 	if gen, _ := arguments["gen-api-certs"].(bool); gen {
 		if err := clients.GenerateCA(mtbulkConfig.Service.Clients.MikrotikAPI.KeyStore); err != nil {
 			return Config{}, nil, entities.Job{}, err
@@ -143,6 +149,12 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 		jobTemplate = entities.Job{
 			Kind: mode.SystemBackupMode,
 			Data: map[string]string{"name": name, "backups_store": backupsStore},
+		}
+	}
+
+	if m, _ := arguments["security-audit"].(bool); m {
+		jobTemplate = entities.Job{
+			Kind: mode.SecurityAuditMode,
 		}
 	}
 

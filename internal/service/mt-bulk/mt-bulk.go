@@ -6,17 +6,20 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rs/xid"
-	"go.uber.org/zap"
-
 	"github.com/migotom/mt-bulk/internal/entities"
+	"github.com/migotom/mt-bulk/internal/kvdb"
 	"github.com/migotom/mt-bulk/internal/mode"
 	"github.com/migotom/mt-bulk/internal/service"
+	"github.com/migotom/mt-bulk/internal/vulnerabilities"
+
+	"github.com/rs/xid"
+	"go.uber.org/zap"
 )
 
 // MTbulk service.
 type MTbulk struct {
 	sugar       *zap.SugaredLogger
+	kv          kvdb.KV
 	jobTemplate entities.Job
 	jobsLoaders []entities.JobsLoaderFunc
 	jobDone     chan struct{}
@@ -34,13 +37,19 @@ func NewMTbulk(sugar *zap.SugaredLogger, arguments map[string]interface{}, versi
 		return &MTbulk{}, err
 	}
 
+	kv, err := kvdb.OpenKV(sugar, config.Service.KVStore)
+	if err != nil {
+		return &MTbulk{}, err
+	}
+
 	return &MTbulk{
 		Config:      config,
 		sugar:       sugar,
+		kv:          kv,
 		jobsLoaders: jobsLoaders,
 		jobTemplate: jobTemplate,
 		jobDone:     make(chan struct{}),
-		Service:     service.NewService(sugar, config.Service),
+		Service:     service.NewService(sugar, kv, config.Service),
 		Results:     make(chan entities.Result),
 	}, nil
 }
@@ -59,7 +68,7 @@ func (mtbulk *MTbulk) LoadJobs(ctx context.Context) {
 	for _, jobsLoader := range mtbulk.jobsLoaders {
 		jobs, err := jobsLoader(ctx, mtbulk.jobTemplate)
 		if err != nil {
-			mtbulk.Results <- entities.Result{Error: err}
+			mtbulk.Results <- entities.Result{Errors: []error{err}}
 			break
 		}
 		jobsToProcess = append(jobsToProcess, jobs...)
@@ -102,8 +111,8 @@ collectorLooop:
 			if !ok {
 				break collectorLooop
 			}
-			if result.Error != nil {
-				hostsErrors[result.Job.Host] = append(hostsErrors[result.Job.Host], result.Error)
+			if result.Errors != nil {
+				hostsErrors[result.Job.Host] = append(hostsErrors[result.Job.Host], result.Errors...)
 			}
 
 			if (mtbulk.Verbose && result.Job.Host != entities.Host{}) {
@@ -130,23 +139,45 @@ collectorLooop:
 		return
 	}
 
+	vulnerabilitiesDetected := false
+
 	fmt.Println()
 	fmt.Println("Errors list:")
 	for host, errors := range hostsErrors {
 		if host.IP != "" {
 			fmt.Printf("Device: %s:%s\n", host.IP, host.Port)
+		} else {
+			fmt.Println("Generic:")
 		}
 
-		for _, error := range errors {
-			fmt.Printf("\t%s\n", error)
+		for _, err := range errors {
+			if err == nil {
+				continue
+			}
+			fmt.Printf("\t%s\n", err)
+			if ser, ok := err.(mode.SecurityAuditError); ok && ser.VulnerabilitiesErrors != nil {
+				vulnerabilitiesDetected = true
+			}
+		}
+	}
+
+	if vulnerabilitiesDetected {
+		cves := ExtractCVEs(hostsErrors)
+
+		fmt.Println()
+		fmt.Println("Deetected CVE:")
+		for _, cve := range cves {
+			fmt.Printf("%s\n", cve)
 		}
 	}
 }
 
 // Listen runs service workers and process all provided jobs.
 // Returns after process of all jobs.
-func (mtbulk *MTbulk) Listen(ctx context.Context) {
-	mtbulk.Service.Listen(ctx)
+func (mtbulk *MTbulk) Listen(ctx context.Context, cancel context.CancelFunc) {
+	defer mtbulk.kv.Close()
+
+	mtbulk.Service.Listen(ctx, cancel)
 }
 
 // ApplicationStatus stores final execution status that should be returned to OS.
@@ -169,4 +200,35 @@ func (app *ApplicationStatus) Get() int {
 	defer app.Unlock()
 
 	return app.code
+}
+
+// ExtractCVEs extracts list of unique CVEs from list of hosts' errors.
+func ExtractCVEs(hostsErrors map[entities.Host][]error) []vulnerabilities.CVE {
+	cves := make([]vulnerabilities.CVE, 0, len(hostsErrors))
+
+	for _, errors := range hostsErrors {
+		for _, err := range errors {
+			securityAuditError, ok := err.(mode.SecurityAuditError)
+			if !ok {
+				continue
+			}
+
+			vulnerabilitiesErrors, ok := securityAuditError.VulnerabilitiesErrors.(vulnerabilities.VulnerabilityError)
+			if !ok {
+				continue
+			}
+
+		vulnerabilitiesScan:
+			for _, cve := range vulnerabilitiesErrors.Vulnerabilities {
+				for _, storedCve := range cves {
+					if storedCve.ID == cve.ID {
+						continue vulnerabilitiesScan
+					}
+				}
+				cves = append(cves, cve)
+			}
+		}
+
+	}
+	return cves
 }

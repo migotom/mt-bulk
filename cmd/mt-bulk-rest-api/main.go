@@ -57,7 +57,7 @@ func main() {
 	router.HandleFunc("/authenticate", mtbulkRESTAPI.AuthenticateToken(ctx)).Methods("POST")
 
 	// file uploads/dowloads
-	rootDirectory := filepath.Clean(filepath.Join("/", mtbulkRESTAPI.Config.RootDirectory))
+	rootDirectory := filepath.FromSlash(filepath.Clean(filepath.Join("/", mtbulkRESTAPI.Config.RootDirectory)))
 	fileServer := http.FileServer(http.Dir(mtbulkRESTAPI.Config.RootDirectory))
 	filesRouter := router.PathPrefix(rootDirectory).Subrouter()
 	filesRouter.Use(mtbulkRESTAPI.StripFileIndexes)
@@ -114,8 +114,8 @@ func main() {
 
 		sugar.Infow("MT-bulk REST API", "listen", mtbulkRESTAPI.Config.Listen)
 		err := httpServer.ListenAndServeTLS(
-			filepath.Join(mtbulkRESTAPI.Config.KeyStore, "rest-api.crt"),
-			filepath.Join(mtbulkRESTAPI.Config.KeyStore, "rest-api.key"),
+			filepath.FromSlash(filepath.Join(mtbulkRESTAPI.Config.KeyStore, "rest-api.crt")),
+			filepath.FromSlash(filepath.Join(mtbulkRESTAPI.Config.KeyStore, "rest-api.key")),
 		)
 		if err != http.ErrServerClosed {
 			sugar.Fatalw("HTTP server listen", "error", err)
@@ -123,6 +123,6 @@ func main() {
 	}()
 
 	// run workers
-	mtbulkRESTAPI.RunWorkers(ctx)
+	mtbulkRESTAPI.RunWorkers(ctx, cancel)
 	wg.Wait()
 }
