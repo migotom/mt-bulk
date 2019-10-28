@@ -52,7 +52,7 @@ func (ssh *SSH) Connect(ctx context.Context, IP, Port, User, Password string) (e
 	var sshConfig cryptossh.Config
 	var sshAuthMethods []cryptossh.AuthMethod
 
-	if key, err := ioutil.ReadFile(filepath.Join(ssh.Config.KeyStore, "id_rsa.key")); err == nil {
+	if key, err := ioutil.ReadFile(filepath.FromSlash(filepath.Join(ssh.Config.KeyStore, "id_rsa.key"))); err == nil {
 		if signer, err := cryptossh.ParsePrivateKey(key); err == nil {
 			sshAuthMethods = append(sshAuthMethods, cryptossh.PublicKeys(signer))
 		}

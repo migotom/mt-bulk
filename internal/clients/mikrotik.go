@@ -36,8 +36,8 @@ func (mikrotikAPI *MikrotikAPI) GetConfig() Config {
 
 // Connect to routerOS by Mikrotik secure API.
 func (mikrotikAPI *MikrotikAPI) Connect(ctx context.Context, IP, Port, User, Password string) (err error) {
-	clientCrt := filepath.Join(mikrotikAPI.Config.KeyStore, "client.crt")
-	clientKey := filepath.Join(mikrotikAPI.Config.KeyStore, "client.key")
+	clientCrt := filepath.FromSlash(filepath.Join(mikrotikAPI.Config.KeyStore, "client.crt"))
+	clientKey := filepath.FromSlash(filepath.Join(mikrotikAPI.Config.KeyStore, "client.key"))
 	certificate, err := tls.LoadX509KeyPair(clientCrt, clientKey)
 	if err != nil {
 		return err

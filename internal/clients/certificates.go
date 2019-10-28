@@ -36,7 +36,7 @@ func GenerateCA(store string) error {
 		return fmt.Errorf("can't generate CA private key: %s", err)
 	}
 
-	privateCAFile, err := os.OpenFile(filepath.Join(store, "ca.key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	privateCAFile, err := os.OpenFile(filepath.FromSlash(filepath.Join(store, "ca.key")), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("can't create CA private key: %s", err)
 	}
@@ -65,7 +65,7 @@ func GenerateCA(store string) error {
 		return fmt.Errorf("can't generate CA certificate: %s", err)
 	}
 
-	certificateFile, err := os.Create(filepath.Join(store, "ca.crt"))
+	certificateFile, err := os.Create(filepath.FromSlash(filepath.Join(store, "ca.crt")))
 	if err != nil {
 		return fmt.Errorf("can't create CA certificate: %s", err)
 	}
@@ -88,7 +88,7 @@ func GenerateCerts(store, subject string) error {
 		return fmt.Errorf("can't locate certificates directory (%s), %s", store, err)
 	}
 
-	tlsCA, err := tls.LoadX509KeyPair(filepath.Join(store, "ca.crt"), filepath.Join(store, "ca.key"))
+	tlsCA, err := tls.LoadX509KeyPair(filepath.FromSlash(filepath.Join(store, "ca.crt")), filepath.FromSlash(filepath.Join(store, "ca.key")))
 	if err != nil {
 		return fmt.Errorf("can't load CA key pair: %s", err)
 	}
@@ -103,7 +103,7 @@ func GenerateCerts(store, subject string) error {
 		return fmt.Errorf("can't generate %s private key: %s", subject, err)
 	}
 
-	privateFile, err := os.OpenFile(filepath.Join(store, subject+".key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	privateFile, err := os.OpenFile(filepath.FromSlash(filepath.Join(store, subject+".key")), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("can't create %s private key: %s", subject, err)
 	}
@@ -133,7 +133,7 @@ func GenerateCerts(store, subject string) error {
 		return fmt.Errorf("can't generate %s certificate: %s", subject, err)
 	}
 
-	certificateFile, err := os.Create(filepath.Join(store, subject+".crt"))
+	certificateFile, err := os.Create(filepath.FromSlash(filepath.Join(store, subject+".crt")))
 	if err != nil {
 		return fmt.Errorf("can't create %s certificate: %s", subject, err)
 	}
@@ -173,7 +173,7 @@ func GenerateKeys(store string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(filepath.Join(store, "id_rsa.pub"), ssh.MarshalAuthorizedKey(public), 0600)
+	err = ioutil.WriteFile(filepath.FromSlash(filepath.Join(store, "id_rsa.pub")), ssh.MarshalAuthorizedKey(public), 0600)
 	if err != nil {
 		return fmt.Errorf("can't create public key: %s", err)
 	}

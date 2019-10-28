@@ -23,7 +23,7 @@ func SecurePathJoin(root, name string) (string, error) {
 	if root == "" {
 		root = "."
 	}
-	return filepath.Join(root, filepath.FromSlash(path.Clean("/"+name))), nil
+	return filepath.FromSlash(filepath.Join(root, filepath.FromSlash(path.Clean("/"+name)))), nil
 }
 
 func waitForExpected(reader io.Reader, expect *regexp.Regexp) (result string, err error) {
