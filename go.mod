@@ -2,6 +2,7 @@ module github.com/migotom/mt-bulk
 
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/dgraph-io/badger v1.6.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
 	github.com/go-routeros/routeros v0.0.0-20190905230431-4e69e5fc3b22 // indirect
@@ -10,6 +11,7 @@ require (
 	github.com/migotom/routeros v0.0.0-20181221124051-7e6c4656571f
 	github.com/pkg/sftp v1.10.1
 	github.com/rs/xid v1.2.1
+	github.com/stretchr/testify v1.4.0
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0 // indirect
 	go.uber.org/zap v1.10.0
