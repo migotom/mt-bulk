@@ -14,9 +14,10 @@ func NewConfig(version string) Config {
 
 // Config is service configuration.
 type Config struct {
-	Version          string `toml:"-" yaml:"-"`
-	SkipVersionCheck bool   `toml:"skip_version_check" yaml:"skip_version_check"`
-	Workers          int    `toml:"workers" yaml:"workers"`
-
-	Clients clients.Clients `toml:"clients" yaml:"clients"`
+	Version          string          `toml:"-" yaml:"-"`
+	SkipVersionCheck bool            `toml:"skip_version_check" yaml:"skip_version_check"`
+	Workers          int             `toml:"workers" yaml:"workers"`
+	KVStore          string          `toml:"mtbulk_database" yaml:"mtbulk_database"`
+	CVEURL           string          `toml:"cve_url" yaml:"cve_url"`
+	Clients          clients.Clients `toml:"clients" yaml:"clients"`
 }

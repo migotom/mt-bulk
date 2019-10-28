@@ -10,20 +10,20 @@ import (
 )
 
 // Custom executes by client custom job.
-func Custom(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, []string, error) {
+func Custom(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) entities.Result {
 	results := make([]entities.CommandResult, 0, 8)
 
 	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
 	results = append(results, establishResult)
 	if err != nil {
-		return results, nil, err
+		return entities.Result{Results: results, Errors: []error{err}}
 	}
 	defer client.Close()
 
-	commandResults, err := clients.ExecuteCommands(ctx, client, job.Commands)
+	commandResults, _, err := clients.ExecuteCommands(ctx, client, job.Commands)
 	results = append(results, commandResults...)
 	if err != nil {
-		return results, nil, fmt.Errorf("executing custom commands error %v", err)
+		return entities.Result{Results: results, Errors: []error{fmt.Errorf("executing custom commands error %v", err)}}
 	}
-	return results, nil, err
+	return entities.Result{Results: results}
 }

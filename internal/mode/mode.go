@@ -10,7 +10,7 @@ import (
 )
 
 // OperationModeFunc represents operation mode function.
-type OperationModeFunc func(context.Context, *zap.SugaredLogger, clients.Client, *entities.Job) ([]entities.CommandResult, []string, error)
+type OperationModeFunc func(context.Context, *zap.SugaredLogger, clients.Client, *entities.Job) entities.Result
 
 const (
 	// ChangePasswordMode is change password operation name.
@@ -29,4 +29,6 @@ const (
 	SFTPMode = "SFTP"
 	// SystemBackupMode is system backup job operation name.
 	SystemBackupMode = "SystemBackup"
+	// SecurityAuditMode is name of a job performing security audit of device.
+	SecurityAuditMode = "SecurityAudit"
 )

@@ -11,15 +11,15 @@ import (
 )
 
 // SFTP initializes SSH public key authentication.
-func SFTP(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) ([]entities.CommandResult, []string, error) {
+func SFTP(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, job *entities.Job) entities.Result {
 	source, ok := job.Data["source"]
 	if !ok || source == "" {
-		return nil, nil, fmt.Errorf("source not specified")
+		return entities.Result{Errors: []error{fmt.Errorf("source not specified")}}
 	}
 
 	target, ok := job.Data["target"]
 	if !ok || target == "" {
-		return nil, nil, fmt.Errorf("target not specified")
+		return entities.Result{Errors: []error{fmt.Errorf("target not specified")}}
 	}
 
 	rootDirectory, ok := job.Data["root_directory"]
@@ -27,11 +27,11 @@ func SFTP(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, 
 		var err error
 		source, err = clients.SecurePathJoin(rootDirectory, source)
 		if err != nil {
-			return nil, nil, err
+			return entities.Result{Errors: []error{err}}
 		}
 		target, err = clients.SecurePathJoin(rootDirectory, target)
 		if err != nil {
-			return nil, nil, err
+			return entities.Result{Errors: []error{err}}
 		}
 	}
 
@@ -43,7 +43,7 @@ func SFTP(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, 
 		}
 	}
 	if !hasSFTPside {
-		return nil, nil, fmt.Errorf("at least one side of sftp transfer has to be remote, syntax like: sftp://remote_file_name.txt")
+		return entities.Result{Errors: []error{fmt.Errorf("at least one side of sftp transfer has to be remote, syntax like: sftp://remote_file_name.txt")}}
 
 	}
 
@@ -52,24 +52,24 @@ func SFTP(ctx context.Context, sugar *zap.SugaredLogger, client clients.Client, 
 	establishResult, err := clients.EstablishConnection(ctx, sugar, client, job)
 	results = append(results, establishResult)
 	if err != nil {
-		return results, nil, err
+		return entities.Result{Results: results, Errors: []error{err}}
 	}
 	defer client.Close()
 
 	copier, ok := client.(clients.Copier)
 	if !ok {
-		return results, nil, fmt.Errorf("copy file operation not implemented for protocol %v", client)
+		return entities.Result{Results: results, Errors: []error{fmt.Errorf("copy file operation not implemented for protocol %v", client)}}
 	}
 
 	var sftpCopyResult entities.CommandResult
 	sftpCopyResult, err = copier.CopyFile(ctx, source, target)
 	results = append(results, sftpCopyResult)
 	if err != nil {
-		return results, nil, err
+		return entities.Result{Results: results, Errors: []error{err}}
 	}
 
 	if strings.Index(source, "sftp://") == 0 && !strings.Contains(target, "sftp://") {
-		return results, []string{target}, err
+		return entities.Result{Results: results, DownloadURLs: []string{target}, Errors: []error{err}}
 	}
-	return results, nil, err
+	return entities.Result{Results: results, Errors: []error{err}}
 }

@@ -73,7 +73,7 @@ func EstablishConnection(ctx context.Context, sugar *zap.SugaredLogger, client C
 }
 
 // ExecuteCommands executes provided list of commands using specified client.
-func ExecuteCommands(ctx context.Context, d Client, commands []entities.Command) ([]entities.CommandResult, error) {
+func ExecuteCommands(ctx context.Context, d Client, commands []entities.Command) ([]entities.CommandResult, map[string]string, error) {
 	allMatches := make(map[string]string)
 	run := func(c entities.Command, responseChan chan<- string, errChan chan<- error) {
 		defer close(responseChan)
@@ -101,10 +101,18 @@ func ExecuteCommands(ctx context.Context, d Client, commands []entities.Command)
 
 		responseChan <- result
 
-		if commandMatches := regexp.MustCompile(c.Match).FindStringSubmatch(result); len(commandMatches) > 1 {
-			for i := 1; i < len(commandMatches); i++ {
-				allMatches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, i)] = commandMatches[i]
-				responseChan <- fmt.Sprintf("/<mt-bulk:regexp> \"%s\" set key \"%s\" with value %v", c.Match, fmt.Sprintf("%%{%s%d}", c.MatchPrefix, i), commandMatches[i])
+		if c.Match != "" {
+			c.Matches = append(c.Matches, c.Match)
+		}
+
+		var counter int
+		for _, match := range c.Matches {
+			if commandMatches := regexp.MustCompile(match).FindStringSubmatch(result); len(commandMatches) > 1 {
+				for i := 1; i < len(commandMatches); i++ {
+					counter++
+					allMatches[fmt.Sprintf("(%%{%s%d})", c.MatchPrefix, counter)] = commandMatches[i]
+					responseChan <- fmt.Sprintf("/<mt-bulk:regexp> \"%s\" set key \"%s\" with value %v", c.Match, fmt.Sprintf("%%{%s%d}", c.MatchPrefix, counter), commandMatches[i])
+				}
 			}
 		}
 	}
@@ -123,9 +131,9 @@ func ExecuteCommands(ctx context.Context, d Client, commands []entities.Command)
 		for {
 			select {
 			case <-ctx.Done():
-				return executed, errors.New("interrupted")
+				return executed, nil, errors.New("interrupted")
 			case <-time.After(30 * time.Second):
-				return executed, fmt.Errorf("timeouted")
+				return executed, nil, fmt.Errorf("timeouted")
 			case err, ok := <-errChan:
 				if ok {
 					executeError = fmt.Errorf("%v (%s)", err, c)
@@ -144,5 +152,5 @@ func ExecuteCommands(ctx context.Context, d Client, commands []entities.Command)
 			break
 		}
 	}
-	return executed, executeError
+	return executed, allMatches, executeError
 }
