@@ -21,12 +21,12 @@ Default configuration format since version 2.x is YAML.
 
 ### Service
 
-| Property             | Default | Summary                                               |
-| -------------------- | ------- | ----------------------------------------------------- |
-| `workers`            | 4       | number of parallel workers executing jobs             |
-| `skip_version_check` | false   | do not check new mt-bulk version                      |
-| `clients`            |         | section defining setup of all clients implementations |
-| `cve_url`            |         | url used to fetch list of Mikrotik's CVEs             |
+| Property             | Default | Summary                                                  |
+| -------------------- | ------- | -------------------------------------------------------- |
+| `workers`            | 4       | number of parallel workers executing jobs                |
+| `skip_version_check` | false   | do not check new mt-bulk version                         |
+| `clients`            |         | section defining setup of all clients implementations    |
+| `cve_url`            |         | url used to fetch list of Mikrotik's CVEs (can be empty) |
 
 ### Clients
 

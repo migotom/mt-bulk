@@ -1,6 +1,6 @@
 # mt-bulk
 
-MT-bulk is a toolset to help manage multiple Mikrotik/RouterOS devices by sending in parallel predefined or custom commands to multiple devices at once using Mikrotik SSL API, SSH and SFTP.  
+MT-bulk is a toolset to help manage multiple Mikrotik/RouterOS devices by sending in parallel predefined or custom commands to multiple devices at once using Mikrotik SSL API, SSH and SFTP.
 
 Version 2.x introduces a major breaking changes, please read [Version 2 breaking changes](#Version-2-breaking-changes) section of this readme before upgrading.
 
@@ -12,8 +12,16 @@ CLI tool that process devices list and commands provided by command line argumen
 
 ### MT-bulk REST API gateway
 
-Simple REST API server that process HTTPS POST requests with specified pair of commands and hosts to asynchronously execute on. 
+Simple REST API server that process HTTPS POST requests with specified pair of commands and hosts to asynchronously execute on.
 
+### Contents
+
+- [Command's options](#Options)
+- [Download](#Download)
+- [List of possible operations/modes](#Operations)
+- [Configuration description](#Configurations)
+- [Quick Overview / Tutorial](#Quick-Overview-/-Tutorial)
+- [Troubleshooting](#Troubleshooting)
 
 ## Options
 
@@ -28,11 +36,12 @@ Usage:
   mt-bulk init-secure-api [options] [<hosts>...]
   mt-bulk init-publickey-ssh [options] [<hosts>...]
   mt-bulk change-password (--new=<newpass>) [--user=<login>] [options] [<hosts>...]
-  mt-bulk system-backup (--name=<name>) (--backup-store=<backups>) [options] [<hosts>...]  
+  mt-bulk system-backup (--name=<name>) (--backup-store=<backups>) [options] [<hosts>...]
+  mt-bulk security-audit [options] [<hosts>...]
   mt-bulk sftp <source> <target> [options] [<hosts>...]
 
-  mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]  
-  mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]  
+  mt-bulk custom-api [--commands-file=<commands>] [options] [<hosts>...]
+  mt-bulk custom-ssh [--commands-file=<commands>] [options] [<hosts>...]
   mt-bulk -h | --help
   mt-bulk --version
 
@@ -67,26 +76,28 @@ Current and historical releases of MT-bulk and MT-bulk-rest-api at https://githu
 
 List of possible operations to execute by CLI and REST API:
 
-* [Generate Mikrotik API SSL certificate](./docs/operations.md#Generate-Mikrotik-API-SSL-certificates)
-* [Generate SSH RSA Private/Public keys](./docs/operations.md#Generate-SSH-RSA-Private/Public-keys)
-* [Initialize device to use Mikrotik SSL API](./docs/operations.md#Initialize-device-to-use-Mikrotik-SSL-API)
-* [Initialize device to use Public key SSH authentication](./docs/operations.md#Initialize-device-to-use-Public-key-SSH-authentication)
-* [Change user's password](./docs/operations.md#Change-user's-password)
-* [System backup](/docs/operations.md#System-backup)
-* [SFTP](/docs/operations.md#SFTP)
-* [Execute sequence of custom commands](./docs/operations.md#Execute-sequence-of-custom-commands)
+- [Generate Mikrotik API SSL certificate](./docs/operations.md#Generate-Mikrotik-API-SSL-certificates)
+- [Generate SSH RSA Private/Public keys](./docs/operations.md#Generate-SSH-RSA-Private/Public-keys)
+- [Initialize device to use Mikrotik SSL API](./docs/operations.md#Initialize-device-to-use-Mikrotik-SSL-API)
+- [Initialize device to use Public key SSH authentication](./docs/operations.md#Initialize-device-to-use-Public-key-SSH-authentication)
+- [Change user's password](./docs/operations.md#Change-user's-password)
+- [System backup](/docs/operations.md#System-backup)
+- [SFTP](/docs/operations.md#SFTP)
+- [Security audit](/docs/operations.md#Security-audit)
+- [Execute sequence of custom commands](./docs/operations.md#Execute-sequence-of-custom-commands)
 
 ## Configurations
 
 ### Format
 
 MT-bulk supports two formats of configuration files:
-* TOML format (https://github.com/toml-lang/toml)
-* YAML format (https://yaml.org/spec/)
+
+- TOML format (https://github.com/toml-lang/toml)
+- YAML format (https://yaml.org/spec/)
 
 Default configuration format since version 2.x is YAML.
 
-### Configurations loading sequence 
+### Configurations loading sequence
 
 - Application defaults
 - System (`/etc/mt-bulk/config.yml`, `/Library/Application Support/MT-bulk/config.yml`)
@@ -96,12 +107,15 @@ Default configuration format since version 2.x is YAML.
 ### Hosts
 
 Host can be specified using:
-* simple text format:
+
+- simple text format:
+
   - `ip`
   - `ip:port`
   - `foo.bar.com:port`
 
-* using YAML:
+- using YAML:
+
 ```yaml
 host:
   - ip: "192.168.1.1"
@@ -113,11 +127,11 @@ host:
 
 ### Detailed configuration descriptions
 
-* [MT-bulk command line tool
-](./docs/configuration-mt-bulk.md#MT-bulk-configuration)
-* [MT-bulk REST API](./docs/configuration-mt-bulk-rest-api.md#MT-bulk-REST-API-configuration)
+- [MT-bulk command line tool
+  ](./docs/configuration-mt-bulk.md#MT-bulk-configuration)
+- [MT-bulk REST API](./docs/configuration-mt-bulk-rest-api.md#MT-bulk-REST-API-configuration)
 
-## Examples
+## Quick Overview / Tutorial
 
 Detailed examples and sample configurations at [examples/](examples/) directory of project.
 
@@ -139,7 +153,7 @@ Initialize 192.168.1.2, 192.168.1.3 and 192.168.1.4 (in this example each device
 mt-bulk change-password -w 16 -C examples/configurations/mt-bulk.example.yml --new=supersecret --user=admin --source-db
 ```
 
-Change admin's password to *supersecret* for admin user on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
+Change admin's password to _supersecret_ for admin user on devices selected by SQL query using 16 workers. Connection details and query pointed by mtbulk.cfg (section [db])
 
 ### MT-bulk REST API gateway
 
@@ -154,6 +168,7 @@ mt-bulk-rest-api -C examples/configurations/mt-bulk-rest-api.example.yml
 ```
 
 Request authentication token:
+
 ```bash
 $ curl -k -H "Content-Type: application/json" -d '{"key":"abc"}' -X POST https://localhost:8080/authenticate
 
@@ -161,6 +176,7 @@ $ curl -k -H "Content-Type: application/json" -d '{"key":"abc"}' -X POST https:/
 ```
 
 Request execute custom command:
+
 ```bash
 $ curl -k -H "Authorization: some.token.value" -H "Content-Type: application/json" -d '{"host":{"ip":"10.0.0.1","user":"admin","password":"secret"},"kind":"CustomSSH","commands":[{"body":"/user print","expect":"LAST"}]}}' -X POST https://localhost:8080/job
 
@@ -170,36 +186,35 @@ $ curl -k -H "Authorization: some.token.value" -H "Content-Type: application/jso
 
 #### Endpoints
 
-* POST https://localhost:8080/authenticate \
-Authenticate and obtain auth token. `"key"` is one of access keys defined in configuration [`authenticate.key`], each `"key"` can have list of regexp rules defining list of allowed device IP addresses to use in requests.
+- POST https://localhost:8080/authenticate \
+  Authenticate and obtain auth token. `"key"` is one of access keys defined in configuration [`authenticate.key`], each `"key"` can have list of regexp rules defining list of allowed device IP addresses to use in requests.
 
 ```json
 {
-	"key": "abc"
+  "key": "abc"
 }
 ```
 
-* POST https://localhost:8080/job \
-MT-bulk API request. Run and execute specified job with optional additional commands on specified host. Each request must have valid token as `Authorization` header field. [List of possible operations](./docs/operations.md)
+- POST https://localhost:8080/job \
+  MT-bulk API request. Run and execute specified job with optional additional commands on specified host. Each request must have valid token as `Authorization` header field. [List of possible operations](./docs/operations.md)
 
 ```json
 {
-	"host": {
-		"ip": "10.0.0.1",
-		"user": "admin",
-		"password": "secret"
-	},
-	"kind": "CustomSSH",
-	"commands": [ { "body": "/user print", "expect": "LAST-LOGGED-IN" }]
+  "host": {
+    "ip": "10.0.0.1",
+    "user": "admin",
+    "password": "secret"
+  },
+  "kind": "CustomSSH",
+  "commands": [{ "body": "/user print", "expect": "LAST-LOGGED-IN" }]
 }
 ```
 
-* GET https://localhost:8080/{root_directory}/{path_to_file} \
-Download file (eg. uploaded earlier by `SystemBackup` operation to MT-bulk `root_directory` defined in configuration). Each request must have valid token as `Authorization` header field.
+- GET https://localhost:8080/{root_directory}/{path_to_file} \
+  Download file (eg. uploaded earlier by `SystemBackup` operation to MT-bulk `root_directory` defined in configuration). Each request must have valid token as `Authorization` header field.
 
-* POST https://localhost:8080/upload \
-Upload a file as multipart/form-data request with field `file`. Uploaded file is accessible in `root_directory` to operations like `SFTP` or `SystemBackup`. Each request must have valid token as `Authorization` header field.
-
+- POST https://localhost:8080/upload \
+  Upload a file as multipart/form-data request with field `file`. Uploaded file is accessible in `root_directory` to operations like `SFTP` or `SystemBackup`. Each request must have valid token as `Authorization` header field.
 
 ## Troubleshooting
 
@@ -209,7 +224,7 @@ Upload a file as multipart/form-data request with field `file`. Uploaded file is
 - Verify username, password, host and port are valid, double check using eg. OpenSSH (MT-bulk doesn't require any additional tools or libraries, uses builtin in runtime SSH implementation)
 - Some older RouterOS allows old and insecure ciphers, SSH implementation builtin MT-bulk will not establish connection using such ciphers, please upgrade your Mikrotik/RouterOS device
 - Use strong-crypto by setting `/ip ssh set strong-crypto=yes` on RouterOS
-- If nothing helps please provide log of establishing connection using ssh command `ssh -vvv <user>@<ip>:<port>` 
+- If nothing helps please provide log of establishing connection using ssh command `ssh -vvv <user>@<ip>:<port>`
 
 ## Version 2 breaking changes
 
@@ -219,7 +234,7 @@ CLI in version 2.x is simplified, all switches and configuring options are moved
 
 ### Configuration file
 
-Configuration structure is rewritten and divided into few sections. Some of options changed as well (eg. `verify_check_sleep` into `verify_check_sleep_ms`). Please compare your current configuration file with attached `mt-bulk.example.cfg`. 
+Configuration structure is rewritten and divided into few sections. Some of options changed as well (eg. `verify_check_sleep` into `verify_check_sleep_ms`). Please compare your current configuration file with attached `mt-bulk.example.cfg`.
 To let know to MT-bulk that configuration file is compatible with version 2.x new entry in config file was added: `version = 2`.
 
 ## Credits
