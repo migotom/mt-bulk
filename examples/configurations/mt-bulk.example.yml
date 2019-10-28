@@ -4,6 +4,7 @@ skip_summary: false
 service:
   workers: 4
   skip_version_check: false
+  mtbulk_database: "db"
   clients:
     ssh:
       verify_check_sleep_ms: 1000
