@@ -41,9 +41,10 @@ func (p *WorkerPool) Add(worker *Worker) {
 }
 
 // Get worker that is already processing jobs for given host or if not found any pick one using round robin.
-func (p *WorkerPool) Get(host entities.Host) (worker *Worker) {
+func (p *WorkerPool) Get(host entities.Host) *Worker {
 	p.Lock()
 	defer p.Unlock()
+
 	for _, worker := range p.pool {
 		if worker.ProcessingHost(host) {
 			return worker
