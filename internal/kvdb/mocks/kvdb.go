@@ -44,7 +44,6 @@ func (txn *TxnMock) NewIterator(badger.IteratorOptions) kvdb.Iterator {
 // Discard implements Txn's Discard.
 func (txn *TxnMock) Discard() {
 	_ = txn.Called()
-	return
 }
 
 // Commit implements Txn's Commit.
