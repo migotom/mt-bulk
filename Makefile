@@ -1,7 +1,7 @@
 # Project
 MTBULK_PROJECT=cmd/mt-bulk/*
 MTBULKRESTAPI_PROJECT=cmd/mt-bulk-rest-api/*
-
+CVES_DIS=utils/cves
 BIN_DIR=bin
 BUILD_DIR=build
 
@@ -65,3 +65,6 @@ build-win-amd64:
 	cd $(BUILD_DIR) && zip -r -9 ../$(BIN_DIR)/mt-bulk.$(VERSION).windows.amd64.zip mt-bulk
 	rm $(BUILD_DIR)/mt-bulk/mt-bulk.exe
 	rm $(BUILD_DIR)/mt-bulk/mt-bulk-rest-api.exe
+
+fetch-cves:
+	curl https://cve.circl.lu/api/search/mikrotik > ${CVES_DIS}/cve_circl_mikrotik.json

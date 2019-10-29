@@ -32,30 +32,34 @@ func (cve CVE) String() string {
 
 // CVEsDownload downloads actual list of CVEs from exterpan public cve-search repository.
 func (vm *Manager) CVEsDownload(ctx context.Context) error {
-	vm.sugar.Infof("Downloading CVEs")
-
 	if vm.cvesURL == "" {
-		return errors.New("Missing CVEs download URL")
+		return errors.New("missing CVEs download URL")
 	}
 
 	var res *http.Response
 	var err error
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 60 * time.Second}
+
+cvesearch:
 	for range []int{1, 2, 3} {
-		var request *http.Request
-		request, err = http.NewRequest("GET", vm.cvesURL, nil)
-		if err != nil {
-			return err
+		for _, url := range []string{vm.cvesURL, FALLBACKCVEURL} {
+			vm.sugar.Infof("Downloading CVEs")
+
+			var request *http.Request
+			request, err = http.NewRequest("GET", url, nil)
+			if err != nil {
+				continue
+			}
+			request.Header.Set("Accept", "application/json")
+			request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:54.0) Gecko/20100101 Firefox/70.0")
+			request = request.WithContext(ctx)
+			res, err = client.Do(request)
+			if err == nil {
+				break cvesearch
+			}
+			time.Sleep(time.Second)
 		}
-		request.Header.Set("Accept", "application/json")
-		request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:54.0) Gecko/20100101 Firefox/70.0")
-		request = request.WithContext(ctx)
-		res, err = client.Do(request)
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Second)
 	}
 	if err != nil {
 		return err
