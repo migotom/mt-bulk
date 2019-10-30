@@ -24,7 +24,7 @@ This operation may be proceeded once, MT-bulk will use certificates from [`servi
 ### CLI
 
 ```bash
-mt-bulk gen-api-certs -C your.configuration.file.yml 10.0.0.1
+mt-bulk gen-api-certs -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -41,7 +41,7 @@ This operation may be proceeded once, MT-bulk will use keys from [service.client
 ### CLI
 
 ```bash
-mt-bulk gen-ssh-keys -C your.configuration.file.yml 10.0.0.1
+mt-bulk gen-ssh-keys -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -57,7 +57,7 @@ Initialize Mikrotik device to use SSL API with MT-bulk. Operation uploads to dev
 Using command line tool its important to remember that location of certificates store is pointed by provided configuration file [`service.clients.mikrotik_api.keys_store`].
 
 ```bash
-mt-bulk init-secure-api -C your.configuration.file.yml 10.0.0.1
+mt-bulk init-secure-api -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -87,7 +87,7 @@ Initialize Mikrotik device to use SSH RSA public key to authenticate with MT-bul
 Using command line tool its important to remember that location of certificates store is pointed by provided configuration file [`service.clients.ssh.keys_store`].
 
 ```bash
-mt-bulk init-publickey-ssh -C your.configuration.file.yml 10.0.0.1
+mt-bulk init-publickey-ssh -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -115,7 +115,7 @@ Change password to given new one with option `--new=<newpass>` and optionally `-
 ### CLI
 
 ```bash
-mt-bulk change-password --new=newsecret --user=admin -C your.configuration.file.yml 10.0.0.1
+mt-bulk change-password --new=newsecret --user=admin -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -142,7 +142,7 @@ Do backup of a system with option `--new=<name>` defining name of backup and `--
 ### CLI
 
 ```bash
-mt-bulk system-backup --name=backup --backup-store=backups/ -C your.configuration.file.yml 10.0.0.1
+mt-bulk system-backup --name=backup --backup-store=backups/ -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -169,7 +169,7 @@ Transfer files to and from devices using SFTP protocol.
 ### CLI
 
 ```bash
-mt-bulk sftp sftp://file_on_mikrotik.txt local_folder/file.txt -C your.configuration.file.yml 10.0.0.1
+mt-bulk sftp sftp://file_on_mikrotik.txt local_folder/file.txt -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -196,7 +196,7 @@ Check device for any known vulnerabilities by searching CVE databases for partic
 ### CLI
 
 ```bash
-mt-bulk security-audit -C your.configuration.file.yml 10.0.0.1
+mt-bulk security-audit -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
@@ -254,7 +254,7 @@ custom-ssh:
 ```
 
 ```bash
-mt-bulk custom-ssh -C your.configuration.file.yml 10.0.0.1
+mt-bulk custom-ssh -C your.configuration.file.yml 10.0.0.1 10.0.0.2 10.0.0.3
 ```
 
 ### REST API request
