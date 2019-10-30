@@ -1,0 +1,26 @@
+{
+    "capec": {
+        "last_update": "2016-10-28T17:22:15",
+        "size": 463
+    },
+    "cpe": {
+        "last_update": "2019-10-30T04:15:27",
+        "size": 283633
+    },
+    "cpeOther": {
+        "last_update": null,
+        "size": 0
+    },
+    "cves": {
+        "last_update": "2019-10-30T05:15:20",
+        "size": 132248
+    },
+    "cwe": {
+        "last_update": "2018-03-29T19:43:57",
+        "size": 1005
+    },
+    "via4": {
+        "last_update": "2019-06-07T18:18:32",
+        "size": 117666
+    }
+}
