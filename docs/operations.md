@@ -13,7 +13,7 @@ Each of operation have two sections, example syntax to use as CLI util `mt-bulk`
 - [Change user's password](#Change-user's-password)
 - [System backup](#System-backup)
 - [SFTP](#SFTP)
-- [Security audit](#Security-audit)
+- [Scan for CVEs and security audit](#Security-audit)
 - [Execute sequence of custom commands](#Execute-sequence-of-custom-commands)
 
 ## Generate Mikrotik API SSL certificates
@@ -191,7 +191,7 @@ mt-bulk sftp sftp://file_on_mikrotik.txt local_folder/file.txt -C your.configura
 
 ## Security audit
 
-Check device for any known vulnerabilities by searching CVE databases for particular Mikrotik version and look on device itself for known non-secure settings turned on.
+Check device for any known vulnerabilities by searching CVE databases for particular Mikrotik version and using SSH look on device itself for known non-secure settings turned on.
 
 ### CLI
 
@@ -214,8 +214,8 @@ mt-bulk security-audit -C your.configuration.file.yml 10.0.0.1
 
 **Important note**
 
-Keep in mind that first security audit can take while as it tries to connect to public CVE database and perform quite long set of checking options commands on device itself.
-Once CVEs database is downloaded each next _Security audit_ operaion should perform much faset as `mt-bulk` caches it up to 24h.
+Keep in mind that first security audit can take while as it tries to connect to public CVE database and perform quite long set of checking options commands on device itself (if public CVE search engine is not available at the moment `mt-bulk` will try to fetch last known and saved at github repository mirror).
+Once CVEs database is downloaded each next _Security audit_ operation should perform much faster as `mt-bulk` caches list of known issues up to 24h.
 
 ## Execute sequence of custom commands
 

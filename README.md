@@ -20,7 +20,7 @@ Simple REST API server that process HTTPS POST requests with specified pair of c
 - [Download](#Download)
 - [List of possible operations/modes](#Operations)
 - [Configuration description](#Configurations)
-- [Quick Overview / Tutorial](#Quick-Overview-/-Tutorial)
+- [Quick Overview / Tutorial](#Quick-Overview--Tutorial)
 - [Troubleshooting](#Troubleshooting)
 
 ## Options
@@ -70,7 +70,7 @@ Options:
 
 ## Download
 
-Current and historical releases of MT-bulk and MT-bulk-rest-api at https://github.com/migotom/mt-bulk/releases
+Current and historical releases of `mt-bulk` and `mt-bulk-rest-api` at https://github.com/migotom/mt-bulk/releases
 
 ## Operations
 
@@ -83,7 +83,7 @@ List of possible operations to execute by CLI and REST API:
 - [Change user's password](./docs/operations.md#Change-user's-password)
 - [System backup](/docs/operations.md#System-backup)
 - [SFTP](/docs/operations.md#SFTP)
-- [Security audit](/docs/operations.md#Security-audit)
+- [Scan for CVEs and security audit](/docs/operations.md#Security-audit)
 - [Execute sequence of custom commands](./docs/operations.md#Execute-sequence-of-custom-commands)
 
 ## Configurations
@@ -127,8 +127,7 @@ host:
 
 ### Detailed configuration descriptions
 
-- [MT-bulk command line tool
-  ](./docs/configuration-mt-bulk.md#MT-bulk-configuration)
+- [MT-bulk command line tool](./docs/configuration-mt-bulk.md#MT-bulk-configuration)
 - [MT-bulk REST API](./docs/configuration-mt-bulk-rest-api.md#MT-bulk-REST-API-configuration)
 
 ## Quick Overview / Tutorial
