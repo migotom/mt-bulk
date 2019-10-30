@@ -38,8 +38,11 @@ func configParser(arguments map[string]interface{}, version string) (mtbulkConfi
 	if mtbulkConfig.Service.KVStore == "" {
 		return Config{}, errors.New("MTbulk database directory not defined")
 	}
-	if mtbulkConfig.Service.CVEURL == "" {
-		mtbulkConfig.Service.CVEURL = vulnerabilities.CVEURL
+	if mtbulkConfig.Service.CVEURLs.DB == "" {
+		mtbulkConfig.Service.CVEURLs.DB = vulnerabilities.CVEURL
+	}
+	if mtbulkConfig.Service.CVEURLs.DBInfo == "" {
+		mtbulkConfig.Service.CVEURLs.DBInfo = vulnerabilities.CVEURLDBInfo
 	}
 
 	var needGenerateCerts bool

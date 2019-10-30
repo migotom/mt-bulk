@@ -26,7 +26,7 @@ Default configuration format since version 2.x is YAML.
 | `workers`            | 4       | number of parallel workers executing jobs                |
 | `skip_version_check` | false   | do not check new mt-bulk version                         |
 | `clients`            |         | section defining setup of all clients implementations    |
-| `cve_url`            |         | url used to fetch list of Mikrotik's CVEs (can be empty) |
+| `cve_urls`           |         | url list used to fetchvMikrotik's CVEs (can be empty)    |
 
 ### Clients
 
@@ -46,6 +46,13 @@ Default configuration format since version 2.x is YAML.
 | `user`                  |            | user name used to establish connection (if not provided in host configuration)                                                                                                            |
 | `keys_store`            |            | location of folder with public/private keys (in case of SSH) or keys and certificates (in case of Mikrotik API) used to establish secure connection or used to authenticate by public key |
 | `pty`                   |            | pty settings for SSH                                                                                                                                                                      |
+### CVE URLs
+
+| Property   | Default | Summary                                                      |
+| ---------- | ------- | ------------------------------------------------------------ |
+| `db_info`  |         | API endpoint used to fetch CVE repositories last updat       |
+| `db`       |         | API endpoint used to fetch CVE database with Mikrotik issues |
+
 
 ### DB
 

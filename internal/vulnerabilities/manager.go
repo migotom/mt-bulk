@@ -17,20 +17,21 @@ import (
 
 // Manager is vulnerability check worker.
 type Manager struct {
-	cvesURL string
-	kv      kvdb.KV
-	sugar   *zap.SugaredLogger
+	cvesURLs []CVEURLs
+
+	kv    kvdb.KV
+	sugar *zap.SugaredLogger
 
 	jobs chan vulnerabilityCheckJob
 }
 
 // NewManager returns new vulnerability manager.
-func NewManager(sugar *zap.SugaredLogger, cvesURL string, kv kvdb.KV) *Manager {
+func NewManager(sugar *zap.SugaredLogger, cvesURLs []CVEURLs, kv kvdb.KV) *Manager {
 	return &Manager{
-		sugar:   sugar,
-		cvesURL: cvesURL,
-		kv:      kv,
-		jobs:    make(chan vulnerabilityCheckJob, 1),
+		sugar:    sugar,
+		cvesURLs: cvesURLs,
+		kv:       kv,
+		jobs:     make(chan vulnerabilityCheckJob, 1),
 	}
 }
 

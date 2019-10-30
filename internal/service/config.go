@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/migotom/mt-bulk/internal/clients"
+	"github.com/migotom/mt-bulk/internal/vulnerabilities"
 )
 
 // NewConfig returns new service config.
@@ -14,10 +15,11 @@ func NewConfig(version string) Config {
 
 // Config is service configuration.
 type Config struct {
-	Version          string          `toml:"-" yaml:"-"`
-	SkipVersionCheck bool            `toml:"skip_version_check" yaml:"skip_version_check"`
-	Workers          int             `toml:"workers" yaml:"workers"`
-	KVStore          string          `toml:"mtbulk_database" yaml:"mtbulk_database"`
-	CVEURL           string          `toml:"cve_url" yaml:"cve_url"`
-	Clients          clients.Clients `toml:"clients" yaml:"clients"`
+	Version          string `toml:"-" yaml:"-"`
+	SkipVersionCheck bool   `toml:"skip_version_check" yaml:"skip_version_check"`
+	Workers          int    `toml:"workers" yaml:"workers"`
+	KVStore          string `toml:"mtbulk_database" yaml:"mtbulk_database"`
+
+	CVEURLs vulnerabilities.CVEURLs `toml:"cve_urls" yaml:"cve_urls"`
+	Clients clients.Clients         `toml:"clients" yaml:"clients"`
 }

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -23,14 +24,15 @@ func TestCVEsDownload(t *testing.T) {
 		Body   string
 	}
 	cases := []struct {
-		Name          string
-		Response      response
-		ExpectedErr   error
-		ExpectedMocks func(kv *mocks.KVMock)
+		Name           string
+		DBResponse     response
+		DBInfoResponse response
+		ExpectedErr    error
+		ExpectedMocks  func(kv *mocks.KVMock)
 	}{
 		{
 			Name: "Valid flow",
-			Response: response{
+			DBResponse: response{
 				http.StatusOK,
 				`
 			{
@@ -61,6 +63,8 @@ func TestCVEsDownload(t *testing.T) {
 			},
 			ExpectedErr: nil,
 			ExpectedMocks: func(kv *mocks.KVMock) {
+				kv.Txn.On("GetCopy", "DB:CVE:DBInfo", mock.Anything).Return(cveDBInfo{CAPEC: cveDBInfoEntry{cveTime{time.Date(2016, time.October, 28, 17, 22, 15, 0, time.UTC)}}}, nil)
+				kv.Txn.On("Store", "DB:CVE:DBInfo", cveDBInfo{CAPEC: cveDBInfoEntry{cveTime{time.Date(2016, time.October, 28, 17, 22, 15, 0, time.UTC)}}}).Return(nil)
 				kv.Txn.On("Store", "CVE:CVE-1-2", CVE{ID: "CVE-1-2", CVSS: 6.4, Modified: "2017-08-29T01:32:00", Summary: "Some issue", References: []string{}}).Return(nil)
 				kv.Txn.On("Store", "CVE:CVE-2-2", CVE{ID: "CVE-2-2", CVSS: 1.4, Modified: "2018-08-29T01:32:00", Summary: "Some issue no 2", References: []string{}}).Return(nil)
 				kv.Txn.On("Store", "Version:51500", []string{"CVE-1-2", "CVE-2-2"}).Return(nil)
@@ -73,7 +77,7 @@ func TestCVEsDownload(t *testing.T) {
 		},
 		{
 			Name: "Error diring storing on KV store",
-			Response: response{
+			DBResponse: response{
 				http.StatusOK,
 				`
 			{
@@ -93,6 +97,8 @@ func TestCVEsDownload(t *testing.T) {
 			},
 			ExpectedErr: errors.New("wrong"),
 			ExpectedMocks: func(kv *mocks.KVMock) {
+				kv.Txn.On("GetCopy", "DB:CVE:DBInfo", mock.Anything).Return(cveDBInfo{}, nil)
+
 				kv.Txn.On("Store", "CVE:CVE-1-2", CVE{ID: "CVE-1-2", CVSS: 6.4, Modified: "2017-08-29T01:32:00", Summary: "Some issue", References: []string{}}).Return(nil)
 				kv.Txn.On("Store", "Version:51500", []string{"CVE-1-2"}).Return(errors.New("wrong"))
 				kv.Txn.On("Discard").Return()
@@ -100,40 +106,57 @@ func TestCVEsDownload(t *testing.T) {
 		},
 		{
 			Name: "Corrupted response",
-			Response: response{
+			DBResponse: response{
 				http.StatusOK,
 				`
 			{
 				Random data 9723972349
 			}`,
 			},
-			ExpectedErr:   errors.New("invalid response body invalid character 'R'"),
-			ExpectedMocks: func(kv *mocks.KVMock) {},
+			ExpectedErr: errors.New("invalid response body invalid character 'R'"),
+			ExpectedMocks: func(kv *mocks.KVMock) {
+				kv.Txn.On("GetCopy", "DB:CVE:DBInfo", mock.Anything).Return(cveDBInfo{}, nil)
+				kv.Txn.On("Discard").Return()
+			},
 		},
 		{
 			Name: "Corrupted response",
-			Response: response{
+			DBResponse: response{
 				http.StatusBadRequest,
 				`Bad Request`,
 			},
-			ExpectedErr:   errors.New("invalid response status code 400"),
-			ExpectedMocks: func(kv *mocks.KVMock) {},
+			ExpectedErr: errors.New("invalid response status code 400"),
+			ExpectedMocks: func(kv *mocks.KVMock) {
+				kv.Txn.On("Discard").Return()
+			},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-				res.WriteHeader(tc.Response.Status)
-				res.Write([]byte(tc.Response.Body))
+			testServerDBInfo := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(tc.DBResponse.Status)
+				res.Write([]byte(`
+				{
+					"capec": {
+						"last_update": "2016-10-28T17:22:15",
+						"size": 463
+					}
+				}
+				`))
 			}))
-			defer func() { testServer.Close() }()
+			defer func() { testServerDBInfo.Close() }()
+
+			testServerDB := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(tc.DBResponse.Status)
+				res.Write([]byte(tc.DBResponse.Body))
+			}))
+			defer func() { testServerDB.Close() }()
 
 			kvMock := mocks.KVMock{Txn: mocks.TxnMock{}}
-			vm := NewManager(sugar, testServer.URL, &kvMock)
+			vm := NewManager(sugar, []CVEURLs{CVEURLs{DBInfo: testServerDBInfo.URL, DB: testServerDB.URL}}, &kvMock)
 
 			tc.ExpectedMocks(&kvMock)
-
 			err := vm.CVEsDownload(context.Background())
 			if !reflect.DeepEqual(err, tc.ExpectedErr) {
 				t.Errorf("not expected error %+v, expecting %+v", err, tc.ExpectedErr)

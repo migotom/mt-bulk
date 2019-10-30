@@ -23,12 +23,18 @@ type Service struct {
 
 // NewService returns new service.
 func NewService(sugar *zap.SugaredLogger, kv kvdb.KV, config Config) *Service {
+	cveURLs := append(
+		[]vulnerabilities.CVEURLs{config.CVEURLs},
+		vulnerabilities.CVEURLs{
+			DBInfo: vulnerabilities.CVEURLfallbackDBInfo,
+			DB:     vulnerabilities.CVEURLfallback,
+		})
 	return &Service{
 		sugar:                  sugar,
 		config:                 config,
 		kv:                     kv,
 		Jobs:                   make(chan entities.Job, config.Workers),
-		VulnerabilitiesManager: vulnerabilities.NewManager(sugar, config.CVEURL, kv),
+		VulnerabilitiesManager: vulnerabilities.NewManager(sugar, cveURLs, kv),
 	}
 }
 

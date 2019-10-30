@@ -38,11 +38,24 @@ func TestCheck(t *testing.T) {
 		]
 	}`
 
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	testServerDB := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
 		res.Write([]byte(response))
 	}))
-	defer func() { testServer.Close() }()
+	defer func() { testServerDB.Close() }()
+	testServerDBInfo := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		res.Write([]byte(
+			`
+		{
+			"capec": {
+				"last_update": "2016-10-28T17:22:15",
+				"size": 463
+			}
+		}
+		`))
+	}))
+	defer func() { testServerDBInfo.Close() }()
 
 	cases := []struct {
 		Name          string
@@ -99,7 +112,7 @@ func TestCheck(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 
 			kvMock := mocks.KVMock{Txn: mocks.TxnMock{It: mocks.IteratorMock{}}}
-			vm := NewManager(sugar, testServer.URL, &kvMock)
+			vm := NewManager(sugar, []CVEURLs{CVEURLs{DBInfo: testServerDBInfo.URL, DB: testServerDB.URL}}, &kvMock)
 			tc.ExpectedMocks(&kvMock)
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -118,5 +131,4 @@ func TestCheck(t *testing.T) {
 			kvMock.Txn.AssertExpectations(t)
 		})
 	}
-
 }
