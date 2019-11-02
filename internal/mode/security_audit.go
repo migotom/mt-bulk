@@ -99,7 +99,12 @@ func SecurityAudit(vulnerabilitiesManager *vulnerabilities.Manager) OperationMod
 		}
 		vulnerabilitiesErrors := vulnerabilitiesManager.Check(version)
 
-		return entities.Result{Results: results, Errors: []error{optionsErr, vulnerabilitiesErrors}}
+		var additionalInformation []string
+		if vul, ok := vulnerabilitiesErrors.(vulnerabilities.VulnerabilityError); ok {
+			additionalInformation = vul.Details()
+		}
+
+		return entities.Result{Results: results, Errors: []error{optionsErr, vulnerabilitiesErrors}, AdditionalInformation: additionalInformation}
 	}
 }
 
@@ -119,22 +124,6 @@ func extractUnsecureOption(re *regexp.Regexp, matches map[string]string) (option
 		}
 	}
 	return
-}
-
-type SecurityAuditError struct {
-	OptionsErrors         error
-	VulnerabilitiesErrors error
-}
-
-func (ser SecurityAuditError) Error() string {
-	var err strings.Builder
-	if ser.OptionsErrors != nil {
-		err.WriteString(fmt.Sprintf("%v\t", ser.OptionsErrors))
-	}
-	if ser.VulnerabilitiesErrors != nil {
-		err.WriteString(ser.VulnerabilitiesErrors.Error())
-	}
-	return err.String()
 }
 
 type optionsError struct {

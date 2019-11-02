@@ -155,7 +155,7 @@ collectorLooop:
 				continue
 			}
 			fmt.Printf("\t%s\n", err)
-			if ser, ok := err.(mode.SecurityAuditError); ok && ser.VulnerabilitiesErrors != nil {
+			if vul, ok := err.(vulnerabilities.VulnerabilityError); ok && vul.Vulnerabilities != nil {
 				vulnerabilitiesDetected = true
 			}
 		}
@@ -208,18 +208,13 @@ func ExtractCVEs(hostsErrors map[entities.Host][]error) []vulnerabilities.CVE {
 
 	for _, errors := range hostsErrors {
 		for _, err := range errors {
-			securityAuditError, ok := err.(mode.SecurityAuditError)
-			if !ok {
-				continue
-			}
-
-			vulnerabilitiesErrors, ok := securityAuditError.VulnerabilitiesErrors.(vulnerabilities.VulnerabilityError)
+			vul, ok := err.(vulnerabilities.VulnerabilityError)
 			if !ok {
 				continue
 			}
 
 		vulnerabilitiesScan:
-			for _, cve := range vulnerabilitiesErrors.Vulnerabilities {
+			for _, cve := range vul.Vulnerabilities {
 				for _, storedCve := range cves {
 					if storedCve.ID == cve.ID {
 						continue vulnerabilitiesScan
