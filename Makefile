@@ -8,7 +8,7 @@ BUILD_DIR=build
 EXAMPLES=examples
 DOCS=docs
 README=README.md
-VERSION=2.2.1
+VERSION=2.2.2
 
 # Go
 GOCMD=go
