@@ -1,5 +1,7 @@
 # mt-bulk
 
+[![Gitter](https://badges.gitter.im/mt-bulk/community.svg)](https://gitter.im/mt-bulk/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 MT-bulk is a toolset to help manage multiple Mikrotik/RouterOS devices by sending in parallel predefined or custom commands to multiple devices at once using Mikrotik SSL API, SSH and SFTP.
 
 Version 2.x introduces a major breaking changes, please read [Version 2 breaking changes](#Version-2-breaking-changes) section of this readme before upgrading.
