@@ -6,7 +6,7 @@ import (
 
 // Config of MTbulkRESTGateway command.
 type Config struct {
-	Version       int            `toml:"version"`
+	Version       int            `toml:"version" yaml:"version"`
 	Listen        string         `toml:"listen" yaml:"listen"`
 	RootDirectory string         `toml:"root_directory" yaml:"root_directory"`
 	KeyStore      string         `toml:"keys_store" yaml:"keys_store"`

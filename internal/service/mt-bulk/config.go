@@ -8,8 +8,8 @@ import (
 
 // Config of MTbulk command.
 type Config struct {
-	Version     int  `toml:"version"`
-	Verbose     bool `toml:"verbose"`
+	Version     int  `toml:"version" yaml:"version"`
+	Verbose     bool `toml:"verbose" yaml:"verbose"`
 	SkipSummary bool `toml:"skip_summary" yaml:"skip_summary"`
 
 	Service           service.Config  `toml:"service" yaml:"service"`

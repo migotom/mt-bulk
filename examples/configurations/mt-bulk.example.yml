@@ -36,3 +36,7 @@ custom-ssh:
       expect: "NAME"
     - body: "/interface print"
       expect: "NAME"
+
+custom-api:
+  command:
+    - body: "/interface/print"

@@ -5,15 +5,17 @@ import (
 	"encoding/gob"
 
 	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
 	"go.uber.org/zap"
 )
 
 // OpenKV opens badger key/value database.
 func OpenKV(sugar *zap.SugaredLogger, dbDir string) (KV, error) {
-	options := badger.DefaultOptions(dbDir).WithTruncate(true)
-	options.Logger = &dbLog{Sugar: sugar}
+	opts := badger.DefaultOptions(dbDir).WithTruncate(true)
+	opts.ValueLogLoadingMode = options.FileIO
+	opts.Logger = &dbLog{Sugar: sugar}
 
-	db, err := badger.Open(options)
+	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, err
 	}

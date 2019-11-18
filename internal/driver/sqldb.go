@@ -114,15 +114,15 @@ func DBSqlLoadJobs(ctx context.Context, jobTemplate entities.Job, dbConfig *DBCo
 
 // DBConfig defines database connection settings.
 type DBConfig struct {
-	Driver     string
-	Params     string
-	Connection interface{}
-	IDserver   int `toml:"id_server"`
-	Queries    DBQueries
+	Driver     string      `toml:"driver" yaml:"driver"`
+	Params     string      `toml:"params" yaml:"params"`
+	Connection interface{} `toml:"-" yaml:"-"`
+	IDserver   int         `toml:"id_server" yaml:"id_server"`
+	Queries    DBQueries   `toml:"queries" yaml:"queries"`
 }
 
 // DBQueries defines list of database queries.
 type DBQueries struct {
-	GetDevices   string `toml:"get_devices"`
-	UpdateDevice string `toml:"update_device"`
+	GetDevices   string `toml:"get_devices" yaml:"get_devices"`
+	UpdateDevice string `toml:"update_device" yaml:"update_device"`
 }

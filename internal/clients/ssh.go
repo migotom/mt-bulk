@@ -22,7 +22,7 @@ const SSHDefaultPort = "22"
 // NewSSHClient returns new SSH client.
 func NewSSHClient(config Config) Client {
 	return &SSH{
-		prompt:              regexp.MustCompile(`(?sm)(\x1b)?(\x5b\x39\x39\x39\x39\x42)?\[[A-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?@[A-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?\] >.{0,1}$`),
+		prompt:              regexp.MustCompile(`(?sm)(\x1b)?(\x5b\x39\x39\x39\x39\x42)?\[[\sA-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?@[\sA-Za-z0-9!"#$%&'()*+,\-./:;<=>^_]*?\] >.{0,1}$`),
 		nonASCIIremover:     regexp.MustCompile("[[:^ascii:]]+"),
 		utf8ArtefactRemover: regexp.MustCompile(`\x1b\x5b\x4b\x0a`),
 		Config:              config,
@@ -61,7 +61,7 @@ func (ssh *SSH) Connect(ctx context.Context, IP, Port, User, Password string) (e
 
 	sshConfig.SetDefaults()
 	sshConfig.Ciphers = append(sshConfig.Ciphers, "aes128-cbc", "aes128-ctr", "aes192-ctr", "aes256-ctr", "aes192-cbc", "aes256-cbc", "3des-cbc", "des-cbc", "diffie-hellman-group-exchange-sha256")
-	sshConfig.KeyExchanges = append(sshConfig.KeyExchanges, "diffie-hellman-group-exchange-sha256", "diffie-hellman-group-exchange-sha1", "diffie-hellman-group1-sha1")
+	sshConfig.KeyExchanges = append(sshConfig.KeyExchanges, "diffie-hellman-group-exchange-sha256", "diffie-hellman-group-exchange-sha1", "diffie-hellman-group1-sha1", "diffie-hellman-group14-sha1 diffie-hellman-group1-sha1")
 	clientConfig := &cryptossh.ClientConfig{
 		Config:          sshConfig,
 		Timeout:         30 * time.Second,
@@ -169,7 +169,6 @@ func (ssh *SSH) RunCmd(body string, expect *regexp.Regexp) (result string, err e
 	} else {
 		result, err = waitForExpected(ssh.stdoutBuf, ssh.prompt)
 	}
-
 	result = ssh.prompt.ReplaceAllString(result, "")
 	result = ssh.utf8ArtefactRemover.ReplaceAllString(result, "")
 	result = ssh.nonASCIIremover.ReplaceAllString(result, "")

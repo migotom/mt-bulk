@@ -2,8 +2,8 @@ package clients
 
 // Clients represents list of supported clients types.
 type Clients struct {
-	SSH         Config `toml:"ssh"`
-	MikrotikAPI Config `toml:"mikrotik_api"`
+	SSH         Config `toml:"ssh" yaml:"ssh"`
+	MikrotikAPI Config `toml:"mikrotik_api" yaml:"mikrotik_api"`
 }
 
 // Config of client.
