@@ -88,22 +88,28 @@ func (ssh *SSH) CopyFile(ctx context.Context, source, target string) (result ent
 	go func() {
 		defer close(doneChan)
 		defer close(errorChan)
+		defer func() {
+			doneChan <- struct{}{}
+		}()
 
 		sftpClient, err := sftp.NewClient(ssh.client)
 		if err != nil {
 			errorChan <- fmt.Errorf("SFTP client creating error error %v", err)
+			return
 		}
 		defer sftpClient.Close()
 
 		rf, err := openFile(sftpClient, target, os.O_CREATE|os.O_WRONLY)
 		if err != nil {
 			errorChan <- fmt.Errorf("target file %s open: %v", target, err)
+			return
 		}
 		defer rf.Close()
 
 		lf, err := openFile(sftpClient, source, os.O_RDONLY)
 		if err != nil {
 			errorChan <- fmt.Errorf("source file %s open: %v", target, err)
+			return
 		}
 		defer lf.Close()
 
@@ -111,8 +117,6 @@ func (ssh *SSH) CopyFile(ctx context.Context, source, target string) (result ent
 		if err != nil {
 			errorChan <- fmt.Errorf("can't copy: %v", err)
 		}
-
-		doneChan <- struct{}{}
 	}()
 
 	result = entities.CommandResult{Body: fmt.Sprintf("/<mt-bulk>copy %s %s", source, target)}
