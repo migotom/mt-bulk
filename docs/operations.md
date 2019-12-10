@@ -189,6 +189,10 @@ mt-bulk sftp sftp://file_on_mikrotik.txt local_folder/file.txt -C your.configura
 }
 ```
 
+**Important note**
+
+To use SFTP user used to connect needs enabled ftp and ssh policies.
+
 ## Security audit
 
 Check device for any known vulnerabilities by searching CVE databases for particular Mikrotik version and using SSH look on device itself for known non-secure settings turned on.
