@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gocarina/gocsv"
 	"gopkg.in/yaml.v2"
 
 	"github.com/BurntSushi/toml"
@@ -36,6 +37,22 @@ func FileLoadJobs(ctx context.Context, jobTemplate entities.Job, filename string
 		if err != nil {
 			return nil, err
 		}
+    case ".csv":
+        type H struct {
+            IP string `csv:"Addresses"`
+            Type string `csv:"Type"`
+        }
+        var hs []H
+        err = gocsv.UnmarshalBytes(content, &hs)
+        if err != nil {
+            return nil, err
+        }
+        for _, h := range hs {
+            // csv export from The Dude contains all Devices, so filter out everything that is not RouterOS
+            if h.Type == "RouterOS" {
+                hosts.Host = append(hosts.Host, entities.Host{IP: h.IP})
+            }
+        }
 	default:
 		reader := bytes.NewReader(content)
 		scanner := bufio.NewScanner(reader)
