@@ -127,6 +127,28 @@ host:
     password: "secret"
 ```
 
+- CSV export from The Dude:
+
+  Hosts can be specified in CSV format as exported by [The Dude](https://www.mikrotik.com/thedude).
+
+  The Dude does not export username or password so these must be specified in the main configuration file.
+
+  1. Open The Dude client and connect to your server.
+  2. Select the List tab on the Devices pane.
+  3. Click the "CSV" button to export all devices. All rows that are not "RouterOS" devices are ignored when
+     the CSV file is read.
+
+  Expected CSV format:
+
+  ```csv
+  Flag,Name,Addresses,MAC,Type,Maps,Services Down,Notes
+  up,192.168.88.1,192.168.88.1,"7E:4D:28:00:00:00, 7E:4D:28:00:00:01, 7E:4D:28:00:00:04",RouterOS,Local,,
+  up,192.168.88.104,192.168.88.104,BE:4E:26:00:00:00,Some Device,Local,,
+  ```
+
+  Note that in the above example, only 192.168.88.1 will be considered valid as it is the only row with
+  the Type of "RouterOS". Rows of any other type will be ignored and not connected to.
+
 ### Detailed configuration descriptions
 
 - [MT-bulk command line tool](./docs/configuration-mt-bulk.md#MT-bulk-configuration)

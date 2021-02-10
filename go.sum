@@ -24,6 +24,8 @@ github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25Kn
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-routeros/routeros v0.0.0-20190905230431-4e69e5fc3b22 h1:C6c62mxsyTBNZVXQ5nuWfNkYCsfklS7Ji0IR5+f1KQQ=
 github.com/go-routeros/routeros v0.0.0-20190905230431-4e69e5fc3b22/go.mod h1:em1mEqFKnoeQuQP9Sg7i26yaW8o05WwcNj7yLhrXxSQ=
+github.com/gocarina/gocsv v0.0.0-20201208093247-67c824bc04d4 h1:Q7s2AN3DhFJKOnzO0uTKLhJTfXTEcXcvw5ylf2BHJw4=
+github.com/gocarina/gocsv v0.0.0-20201208093247-67c824bc04d4/go.mod h1:5YoVOkjYAQumqlV356Hj3xeYh4BdZuLE0/nRkf2NKkI=
 github.com/golang/protobuf v1.3.1 h1:YF8+flBXS5eO826T4nzqPrxfhQThhXl0YzfuUPu4SBg=
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/gorilla/mux v1.7.3 h1:gnP5JzjVOuiZD07fKKToCAOjS0yOpj/qPETTXCCS6hw=
