@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -27,10 +26,11 @@ func TestFileLoadJobs(t *testing.T) {
 			},
 		},
 		{
-			Name:          "Wrong, invalid hostname",
-			FileContent:   "foo\n192.168.1.2:22",
-			ExpectedJobs:  nil,
-			ExpectedError: errors.New("can't resolve host: foo"),
+			Name:        "Wrong, skip invalid hostname, keep valid",
+			FileContent: "foo\n192.168.1.2:22",
+			ExpectedJobs: []entities.Job{
+				entities.Job{Host: entities.Host{IP: "192.168.1.2", Port: "22"}},
+			},
 		},
 	}
 	for _, tc := range cases {
