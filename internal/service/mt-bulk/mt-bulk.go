@@ -3,6 +3,7 @@ package mtbulk
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -34,12 +35,16 @@ type MTbulk struct {
 func NewMTbulk(sugar *zap.SugaredLogger, arguments map[string]interface{}, version string) (*MTbulk, error) {
 	config, jobsLoaders, jobTemplate, err := configParser(arguments, version)
 	if err != nil {
-		return &MTbulk{}, err
+		return &MTbulk{}, fmt.Errorf("configuration parser:%s", err)
+	}
+
+	if reflect.DeepEqual(entities.Job{}, jobTemplate) {
+		return nil, nil
 	}
 
 	kv, err := kvdb.OpenKV(sugar, config.Service.KVStore)
 	if err != nil {
-		return &MTbulk{}, err
+		return &MTbulk{}, fmt.Errorf("creating cache KV store:%s", err)
 	}
 
 	return &MTbulk{

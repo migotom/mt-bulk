@@ -50,7 +50,11 @@ func main() {
 
 	mtbulk, err := mtbulk.NewMTbulk(sugar, arguments, version)
 	if err != nil {
-		log.Fatalf("Configuration parser error: %s\n", err)
+		log.Fatalf("Creating new MTbulk instance: %s\n", err)
+	}
+
+	if mtbulk == nil {
+		os.Exit(0)
 	}
 
 	wg := new(sync.WaitGroup)
